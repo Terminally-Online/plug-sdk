@@ -1,0 +1,28 @@
+import { z } from "zod";
+
+import { ExternalSchema } from "@/src/lib/schemas/external";
+import { createResponseSchema } from "@/src/lib/schemas/response";
+
+export const ChainSchema = z.object({
+  chain_id: z.number(),
+  address: z.string(),
+  name: z.string(),
+  symbol: z.string(),
+  decimals: z.number(),
+  icon: z.string().url(),
+  external: ExternalSchema,
+  block_time: z.number(),
+});
+
+export const ChainFilterSchema = z.object({
+  chain_id: z.array(z.number()).optional(),
+});
+
+export const ChainQueryParamsSchema = z.object({
+  filter: ChainFilterSchema.optional(),
+});
+export const ChainResponseSchema = createResponseSchema(ChainSchema);
+
+export type Chain = z.infer<typeof ChainSchema>;
+export type ChainQueryParams = z.infer<typeof ChainQueryParamsSchema>;
+export type ChainResponse = z.infer<typeof ChainResponseSchema>;

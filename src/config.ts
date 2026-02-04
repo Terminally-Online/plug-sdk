@@ -1,0 +1,65 @@
+import type { PlugSDKConfig, CacheConfig } from './types'
+
+const minute = 60 * 1000
+
+export const DEFAULT_SDK_CONFIG: Required<PlugSDKConfig> = {
+    baseUrl: 'https://api.plug.to',
+    timeout: 30000,
+    retries: 3,
+    cache: {
+        staleTime: 5 * minute,
+        gcTime: 10 * minute
+    },
+    onError: (error: Error) => {
+        console.error('[Plug SDK Error]:', error)
+    },
+    onSuccess: () => { }
+}
+
+export const CACHE_CONFIG: CacheConfig = {
+    protocols: {
+        staleTime: 10 * minute,
+        gcTime: 30 * minute
+    },
+    actions: {
+        staleTime: 5 * minute,
+        gcTime: 15 * minute
+    },
+    intents: {
+        staleTime: 2 * minute,
+        gcTime: 10 * minute
+    }
+}
+
+const stableStringify = (obj: unknown): string | undefined =>
+    obj === undefined ? undefined : JSON.stringify(obj)
+
+export const QueryKeys = {
+    all: ['plug'] as const,
+
+    chain: (filter?: Record<string, unknown>) =>
+        [...QueryKeys.all, 'chain', stableStringify(filter)] as const,
+
+    address: (address: string) =>
+        [...QueryKeys.all, 'address', address] as const,
+
+    positions: (address: string, filter?: Record<string, unknown>, search?: Record<string, unknown>, price?: Record<string, unknown>, action?: Record<string, unknown>, sort?: Record<string, unknown>, limit?: Record<string, unknown>) =>
+        [...QueryKeys.all, 'positions', address, stableStringify(filter), stableStringify(search), stableStringify(price), stableStringify(action), stableStringify(sort), stableStringify(limit)] as const,
+
+    context: (address: string, filter?: Record<string, unknown>, search?: Record<string, unknown>) =>
+        [...QueryKeys.all, 'context', address, stableStringify(filter), stableStringify(search)] as const,
+
+    transactions: (address: string, filter?: Record<string, unknown>) =>
+        [...QueryKeys.all, 'transactions', address, stableStringify(filter)] as const
+} as const
+
+export const createConfig = (userConfig?: Partial<PlugSDKConfig>): Required<PlugSDKConfig> => {
+    return {
+        ...DEFAULT_SDK_CONFIG,
+        ...userConfig,
+        cache: {
+            ...DEFAULT_SDK_CONFIG.cache,
+            ...userConfig?.cache
+        }
+    }
+}
