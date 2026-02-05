@@ -98,14 +98,14 @@ export const ContextProtocolSchema = z.object({
 export const ContextSchema = z.record(z.string(), ContextProtocolSchema);
 
 export const ContextFilterSchema = z.object({
-  chain_id: z.number().optional(),
-  protocol: z.string().optional(),
-  action: z.string().optional(),
-  unlisted: z.boolean().optional(),
+  chain_id: z.number().optional().describe("Filter results to specific chains from the listed of supported options."),
+  protocol: z.string().optional().describe("Filter results to specific protocols from the listed of supported options."),
+  action: z.string().optional().describe("Filter results to specific actions from the listed of supported options."),
+  unlisted: z.boolean().optional().describe("Include unlisted contracts in the results."),
 });
 export const ContextQueryParamsSchema = z.object({
   filter: ContextFilterSchema.optional(),
-  search: z.record(z.string()).optional(),
+  search: z.record(z.string()).optional().describe("Search within the returned options by input index of an action sentence. This is helpful when letting users refine the options shown for a specific action input such as tokens, vaults or liquidity pools."),
 });
 export const ContextResponseSchema = createResponseSchema(ContextSchema);
 

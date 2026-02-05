@@ -28,9 +28,9 @@ export const TransactionSchema = z.object({
 });
 
 export const GetTransactionsFilterSchema = z.object({
-  id: z.string().optional(),
-  chain_id: z.number().optional(),
-  status: z.string().optional(),
+  id: z.string().optional().describe("Filter results to a specific transaction id."),
+  chain_id: z.number().optional().describe("Filter results to specific chains from the listed of supported options."),
+  status: z.enum(["pending", "confirmed", "failed"]).optional().describe("Filter results to specific transaction statuses."),
 });
 export const GetTransactionsQueryParamsSchema = z.object({
   filter: GetTransactionsFilterSchema.optional(),
@@ -39,14 +39,14 @@ export const GetTransactionsResponseSchema =
   createResponseSchema(TransactionSchema);
 
 export const CreateTransactionInputStepSchema = z.object({
-  protocol: z.string(),
-  step: z.string(),
-  inputs: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+  protocol: z.string().describe("Specify the protocol of the action to create the transaction for."),
+  step: z.string().describe("Specify the action/step to create the transaction for."),
+  inputs: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).describe("The values for each input within the action sentence."),
 });
 export const CreateTransactionInputSchema = z.object({
-  chain_id: z.number(),
-  deadline: z.number().optional(),
-  steps: z.record(z.number(), CreateTransactionInputStepSchema),
+  chain_id: z.number().describe("The chain to create the transaction for."),
+  deadline: z.number().optional().describe("A unix timestamp after which the transaction is no longer valid."),
+  steps: z.record(z.number(), CreateTransactionInputStepSchema).describe("The steps/actions to include in the transaction."),
 });
 export const CreateTransactionQueryParamsSchema = z.object({
   input: CreateTransactionInputSchema,

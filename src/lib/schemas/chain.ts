@@ -15,7 +15,7 @@ export const ChainSchema = z.object({
 });
 
 export const ChainFilterSchema = z.object({
-  chain_id: z.array(z.number()).optional(),
+  chain_id: z.array(z.number()).optional().describe("Filter results to specific chains from the listed of supported options."),
 });
 
 export const ChainQueryParamsSchema = z.object({

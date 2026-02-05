@@ -88,42 +88,42 @@ export const AddressSchema = z.object({
 });
 
 export const AddressParamsSchema = z.object({
-  address: z.string(),
+  address: z.string().describe("The EVM address to get information for. In the case that you request an address we have never indexed, we will immediately index it."),
 });
 export const AddressResponseSchema = createResponseSchema(AddressSchema);
 
 export const PositionsFilterSchema = z.object({
-  chain_id: z.array(z.number()).optional(),
-  standard: z.array(z.string()).optional(),
-  protocol: z.array(z.string()).optional(),
-  address: z.array(z.string()).optional(),
-  token_id: z.array(z.string()).optional(),
-  status: z.string().optional(),
+  chain_id: z.array(z.number()).optional().describe("Filter results to specific chains from the listed of supported options."),
+  standard: z.array(z.enum(["erc:20", "erc:721", "erc:1155", "erc:4626", "native"])).optional().describe("Filter results to specific token standards."),
+  protocol: z.array(z.string()).optional().describe("Filter results to specific protocols from the listed of supported options."),
+  address: z.array(z.string()).optional().describe("Filter results to specific contract addresses."),
+  token_id: z.array(z.string()).optional().describe("Filter results to specific token ids."),
+  verified: z.boolean().optional().describe("Filter results to verified or unverified contracts."),
 });
 export const PositionsSearchSchema = z.object({
-  all: z.string().optional(),
-  name: z.string().optional(),
-  symbol: z.string().optional(),
+  all: z.string().optional().describe("Search by name or symbol."),
+  name: z.string().optional().describe("Search by name only."),
+  symbol: z.string().optional().describe("Search by symbol only."),
 });
 export const PositionsPriceSchema = z.object({
-  resolution: z.string().optional(),
-  limit: z.number().optional(),
-  from: z.number().optional(),
-  to: z.number().optional(),
-  before: z.number().optional(),
+  resolution: z.string().optional().describe("Price data resolution (e.g., 1h, 1d)."),
+  limit: z.number().optional().describe("Maximum number of price points to return."),
+  from: z.number().optional().describe("Unix timestamp for price data start."),
+  to: z.number().optional().describe("Unix timestamp for price data end."),
+  before: z.number().optional().describe("Unix timestamp to fetch prices before."),
 });
 export const PositionsActionSchema = z.object({
-  refresh: z.boolean().optional(),
-  hide: z.boolean().optional(),
+  refresh: z.boolean().optional().describe("Refresh underlying metadata of returned items."),
+  hide: z.boolean().optional().describe("Hide positions from the response."),
 });
 export const PositionsSortSchema = z.object({
-  by: z.enum(["value", "name", "symbol"]).optional(),
-  direction: z.enum(["asc", "desc"]).optional(),
+  by: z.enum(["value", "name", "symbol"]).optional().describe("Field to sort results by."),
+  direction: z.enum(["asc", "desc"]).optional().describe("Sort direction (ascending or descending)."),
 });
 export const PositionsLimitSchema = z.object({
-  count: z.number().optional(),
-  offset: z.number().optional(),
-  groups: z.array(z.array(z.string())).optional(),
+  count: z.number().optional().describe("Maximum number of results to return."),
+  offset: z.number().optional().describe("Number of results to skip for pagination."),
+  groups: z.array(z.array(z.string())).optional().describe("Group results by specified fields."),
 });
 export const PositionsQueryParamsSchema = z.object({
   filter: PositionsFilterSchema.optional(),
