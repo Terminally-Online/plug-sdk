@@ -57,7 +57,7 @@ export function usePositions(
   const {
     filter,
     search,
-    price,
+    history,
     action,
     sort,
     limit,
@@ -73,7 +73,7 @@ export function usePositions(
           address || "",
           filter,
           search,
-          price,
+          history,
           action,
           sort,
           limit,
@@ -88,7 +88,7 @@ export function usePositions(
           address: address!,
           filter,
           search,
-          price,
+          history,
           action,
           sort,
           limit,
@@ -102,10 +102,7 @@ export function usePositions(
 
     const pages = result.data?.pages ?? [];
     const firstPage = pages[0];
-    const allData = useMemo(
-      () => pages.flatMap((p) => p.data ?? []),
-      [pages],
-    );
+    const allData = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
 
     return {
       data: firstPage?.data ?? [],
@@ -129,7 +126,7 @@ export function usePositions(
       address || "",
       filter,
       search,
-      price,
+      history,
       action,
       sort,
       limit,
@@ -139,7 +136,7 @@ export function usePositions(
         address: address!,
         filter,
         search,
-        price,
+        history,
         action,
         sort,
         limit,
