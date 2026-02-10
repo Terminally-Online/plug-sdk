@@ -40,7 +40,7 @@ export const attr = {
 export const AddressBalanceSchema = z.object({
   int: z.string(),
   float: z.string(),
-  value: z.number().optional(),
+  value: z.string().optional(),
 });
 
 export const AddressPriceSchema = z.object({
