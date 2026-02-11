@@ -3,7 +3,10 @@ import { z } from "zod";
 import { createResponseSchema } from "@/src/lib/schemas/response";
 import { ChainSchema } from "@/src/lib/schemas/chain";
 import { AddressParams } from "@/src/lib/schemas/address";
-import { InputReferenceSchema } from "@/src/lib/types/sentence";
+import {
+  InputReferenceSchema,
+  InputTagsSchema,
+} from "@/src/lib/types/sentence";
 
 export const ContextStepAttributesSchema = z.object({
   "is:user_specific": z.boolean().optional(),
@@ -47,6 +50,7 @@ export interface IOutputTypeElement {
   name: string;
   type: string | IOutputTypeElement[];
   offset: number;
+  tags?: z.infer<typeof InputTagsSchema>;
 }
 
 const OutputTypeElementSchema: z.ZodType<IOutputTypeElement> = z.lazy(() =>
@@ -54,6 +58,7 @@ const OutputTypeElementSchema: z.ZodType<IOutputTypeElement> = z.lazy(() =>
     name: z.string(),
     type: OutputTypeSchema,
     offset: z.number(),
+    tags: InputTagsSchema.optional(),
   }),
 );
 
@@ -66,6 +71,7 @@ export const ContextStepOutputInfoSchema = z.object({
   type: OutputTypeSchema,
   offset: z.number(),
   dynamic: z.boolean().optional(),
+  tags: InputTagsSchema.optional(),
 });
 
 export const ContextStepSentenceSchema = z.object({
@@ -98,14 +104,37 @@ export const ContextProtocolSchema = z.object({
 export const ContextSchema = z.record(z.string(), ContextProtocolSchema);
 
 export const ContextFilterSchema = z.object({
-  chain_id: z.number().optional().describe("Filter results to specific chains from the listed of supported options."),
-  protocol: z.string().optional().describe("Filter results to specific protocols from the listed of supported options."),
-  action: z.string().optional().describe("Filter results to specific actions from the listed of supported options."),
-  unlisted: z.boolean().optional().describe("Include unlisted contracts in the results."),
+  chain_id: z
+    .number()
+    .optional()
+    .describe(
+      "Filter results to specific chains from the listed of supported options.",
+    ),
+  protocol: z
+    .string()
+    .optional()
+    .describe(
+      "Filter results to specific protocols from the listed of supported options.",
+    ),
+  action: z
+    .string()
+    .optional()
+    .describe(
+      "Filter results to specific actions from the listed of supported options.",
+    ),
+  unlisted: z
+    .boolean()
+    .optional()
+    .describe("Include unlisted contracts in the results."),
 });
 export const ContextQueryParamsSchema = z.object({
   filter: ContextFilterSchema.optional(),
-  search: z.record(z.string()).optional().describe("Search within the returned options by input index of an action sentence. This is helpful when letting users refine the options shown for a specific action input such as tokens, vaults or liquidity pools."),
+  search: z
+    .record(z.string())
+    .optional()
+    .describe(
+      "Search within the returned options by input index of an action sentence. This is helpful when letting users refine the options shown for a specific action input such as tokens, vaults or liquidity pools.",
+    ),
 });
 export const ContextResponseSchema = createResponseSchema(ContextSchema);
 

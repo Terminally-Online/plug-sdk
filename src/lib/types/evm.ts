@@ -10,7 +10,6 @@ export const EvmTypeSchema = z.union([
     z.literal("bytes"),
     z.literal("null"),
     z.literal("float"),
-    z.literal("timestamp"),
     ...uintSizes.map(size => z.literal(`uint${size}` as const)),
     ...uintSizes.map(size => z.literal(`int${size}` as const)),
     ...bytesSizes.map(size => z.literal(`bytes${size}` as const))

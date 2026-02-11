@@ -53,6 +53,19 @@ export const UnionTypeSchema = z.object({
   types: z.array(InputTypeSchema),
 });
 
+export const InputTagsSchema = z.object({
+  tags: z
+    .array(
+      z.object({
+        dynamic: z.boolean().optional(),
+        kind: z.string(),
+        reference: z.number().optional(),
+        value: z.string(),
+      }),
+    )
+    .optional(),
+});
+
 export const InputReferenceSchema = z.object({
   name: z.string().optional(),
   type: InputTypeSchema.optional(),
@@ -60,6 +73,7 @@ export const InputReferenceSchema = z.object({
   requires: z.array(z.number()).optional(),
   delimiter: z.string().optional(),
   coil: z.boolean().optional(),
+  tags: InputTagsSchema.optional(),
 });
 
 export const InputErrorSchema = z.object({
