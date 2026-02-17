@@ -53,18 +53,15 @@ export const UnionTypeSchema = z.object({
   types: z.array(InputTypeSchema),
 });
 
-export const InputTagsSchema = z.object({
-  tags: z
-    .array(
-      z.object({
-        dynamic: z.boolean().optional(),
-        kind: z.string(),
-        reference: z.number().optional(),
-        value: z.string(),
-      }),
-    )
-    .optional(),
+export const InputTagSchema = z.object({
+  kind: z.string(),
+  value: z.string().optional(),
+  qualifiers: z.array(z.string()).optional(),
+  dynamic: z.boolean().optional(),
+  reference: z.number().optional(),
 });
+
+export const InputTagsSchema = z.array(InputTagSchema);
 
 export const InputReferenceSchema = z.object({
   name: z.string().optional(),
@@ -111,6 +108,8 @@ export const SetValueResultSchema = z.object({
   error: z.string().optional(),
 });
 
+export type InputTag = z.infer<typeof InputTagSchema>;
+export type InputTags = z.infer<typeof InputTagsSchema>;
 export type ConstantType = z.infer<typeof ConstantTypeSchema>;
 export type SimpleUnionType = z.infer<typeof SimpleUnionTypeSchema>;
 export type CompoundType = z.infer<typeof CompoundTypeSchema>;

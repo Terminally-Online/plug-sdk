@@ -83,6 +83,14 @@ export const QueryKeys = {
       address,
       stableStringify(filter),
     ] as const,
+
+  compile: (address: string, input?: Record<string, unknown>) =>
+    [
+      ...QueryKeys.all,
+      "compile",
+      address,
+      stableStringify(input),
+    ] as const,
 } as const;
 
 export const createConfig = (

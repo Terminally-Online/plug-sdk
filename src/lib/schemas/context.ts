@@ -50,7 +50,7 @@ export interface IOutputTypeElement {
   name: string;
   type: string | IOutputTypeElement[];
   offset: number;
-  tags?: z.infer<typeof InputTagsSchema>;
+  tags?: z.infer<typeof InputTagsSchema> | undefined;
 }
 
 const OutputTypeElementSchema: z.ZodType<IOutputTypeElement> = z.lazy(() =>

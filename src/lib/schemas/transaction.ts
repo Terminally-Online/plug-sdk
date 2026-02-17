@@ -68,3 +68,31 @@ export type CreateTransactionQueryParams = AddressParams &
 export type CreateTransactionResponse = z.infer<
   typeof CreateTransactionResponseSchema
 >;
+
+export const CoilOptionSchema = z.object({
+  name: z.string(),
+  type: z.string(),
+  ref: z.string(),
+});
+
+export const CompileTransactionStepSchema = z.object({
+  protocol: z.string().describe("Specify the protocol of the action to compile."),
+  step: z.string().describe("Specify the action/step to compile."),
+});
+export const CompileTransactionInputSchema = z.object({
+  chain_id: z.number().describe("The chain to compile the transaction for."),
+  steps: z.record(z.number(), CompileTransactionStepSchema).describe("The steps/actions to compile."),
+});
+export const CompileTransactionQueryParamsSchema = z.object({
+  input: CompileTransactionInputSchema,
+});
+export const CompileTransactionResponseSchema = createResponseSchema(
+  z.array(z.record(z.string(), z.array(CoilOptionSchema))),
+);
+
+export type CoilOption = z.infer<typeof CoilOptionSchema>;
+export type CompileTransactionQueryParams = AddressParams &
+  z.infer<typeof CompileTransactionQueryParamsSchema>;
+export type CompileTransactionResponse = z.infer<
+  typeof CompileTransactionResponseSchema
+>;

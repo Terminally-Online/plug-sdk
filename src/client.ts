@@ -20,6 +20,8 @@ import {
   ContextResponseSchema,
 } from "@/src/lib/schemas/context";
 import {
+  CompileTransactionQueryParams,
+  CompileTransactionResponseSchema,
   CreateTransactionQueryParams,
   CreateTransactionResponseSchema,
   GetTransactionsQueryParams,
@@ -227,4 +229,8 @@ export class PlugClient {
     "/transaction",
     "POST",
   )(CreateTransactionResponseSchema);
+  readonly compileTransaction = this.endpoint<CompileTransactionQueryParams>(
+    "/transaction/",
+    "PUT",
+  )(CompileTransactionResponseSchema);
 }
