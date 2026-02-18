@@ -73,39 +73,10 @@ export const InputReferenceSchema = z.object({
   tags: InputTagsSchema.optional(),
 });
 
-export const InputErrorSchema = z.object({
-  type: z.union([z.literal("validation"), z.literal("resolution")]),
-  message: z.string(),
-});
-
-export const InputStateSchema = z.object({
-  value: z.string(),
-  error: InputErrorSchema.optional(),
-  isDisabled: z.boolean().optional(),
-});
-
 export const ParsedSentenceSchema = z.object({
   raw: z.string(),
   template: z.string(),
   inputs: z.array(InputReferenceSchema),
-});
-
-export const ResultSchema = <T extends z.ZodType>(valueSchema: T) =>
-  z.union([
-    z.object({
-      success: z.literal(true),
-      value: valueSchema,
-    }),
-    z.object({
-      success: z.literal(false),
-      error: z.string(),
-    }),
-  ]);
-
-export const SetValueResultSchema = z.object({
-  success: z.literal(true),
-  value: z.map(z.number(), InputStateSchema),
-  error: z.string().optional(),
 });
 
 export type InputTag = z.infer<typeof InputTagSchema>;
@@ -119,11 +90,4 @@ export type ComparisonType = z.infer<typeof ComparisonTypeSchema>;
 export type UnionType = z.infer<typeof UnionTypeSchema>;
 export type InputType = z.infer<typeof InputTypeSchema>;
 export type InputReference = z.infer<typeof InputReferenceSchema>;
-export type InputError = z.infer<typeof InputErrorSchema>;
-export type InputState = z.infer<typeof InputStateSchema>;
-export type InputValues = Map<number, InputState>;
 export type ParsedSentence = z.infer<typeof ParsedSentenceSchema>;
-export type Result<T> =
-  | { success: true; value: T }
-  | { success: false; error: string };
-export type SetValueResult = z.infer<typeof SetValueResultSchema>;

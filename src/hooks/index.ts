@@ -5,7 +5,6 @@ export * from "./address/usePositions";
 export * from "./chain/useChain";
 
 export * from "./transaction/useCompile";
-export * from "./transaction/useCord";
 export * from "./transaction/useGetTransaction";
 export * from "./transaction/useCreateTransaction";
 

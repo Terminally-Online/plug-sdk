@@ -9,15 +9,18 @@ import { QueryKeys } from "@/src/config";
 
 import {
   Context,
+  ContextFilter,
+  ContextProtocol,
   ContextQueryParams,
   ContextResponse,
+  ContextStep,
 } from "@/src/lib/schemas/context";
 
 export type UseContextOptions = Omit<ContextQueryParams, "address"> & {
   enabled?: boolean;
 };
 
-export type UseContextResult = Partial<ContextResponse> & {
+type UseContextBase = {
   isLoading: boolean;
   error: Error | null;
   refetch: (
@@ -25,10 +28,53 @@ export type UseContextResult = Partial<ContextResponse> & {
   ) => Promise<QueryObserverResult<ContextResponse, Error>>;
 };
 
+export type UseContextActionResult = UseContextBase & {
+  protocol: ContextProtocol | undefined;
+  action: ContextStep | undefined;
+};
+
+export type UseContextProtocolResult = UseContextBase & {
+  protocol: ContextProtocol | undefined;
+  actions: Record<string, ContextStep> | undefined;
+};
+
+export type ContextAction = ContextStep & { protocol: string; action: string };
+
+export type UseContextFullResult = UseContextBase & {
+  protocols: Context | undefined;
+  actions: ContextAction[] | undefined;
+};
+
+type FilterWithAction = {
+  filter: { protocol: string; action: string } & Omit<
+    ContextFilter,
+    "protocol" | "action"
+  >;
+};
+
+type FilterWithProtocol = {
+  filter: { protocol: string } & Omit<ContextFilter, "protocol">;
+};
+
+export function useContext(
+  address: string | undefined,
+  options: UseContextOptions & FilterWithAction,
+): UseContextActionResult;
+
+export function useContext(
+  address: string | undefined,
+  options: UseContextOptions & FilterWithProtocol,
+): UseContextProtocolResult;
+
+export function useContext(
+  address: string | undefined,
+  options?: UseContextOptions,
+): UseContextFullResult;
+
 export function useContext(
   address: string | undefined,
   options: UseContextOptions = {},
-): UseContextResult {
+): UseContextActionResult | UseContextProtocolResult | UseContextFullResult {
   const { client } = usePlugContext();
   const { filter, search, enabled = true } = options;
 
@@ -38,10 +84,42 @@ export function useContext(
     enabled: enabled && !!address,
   });
 
-  return {
-    ...result.data,
+  const raw = result.data?.data ?? undefined;
+  const base: UseContextBase = {
     isLoading: result.isLoading,
     error: result.error,
     refetch: result.refetch,
+  };
+
+  if (filter?.protocol && filter?.action) {
+    const protocol = raw?.[filter.protocol];
+    return {
+      ...base,
+      protocol,
+      action: protocol?.actions?.[filter.action],
+    };
+  }
+
+  if (filter?.protocol) {
+    const protocol = raw?.[filter.protocol];
+    return {
+      ...base,
+      protocol,
+      actions: protocol?.actions,
+    };
+  }
+
+  const actions = raw
+    ? Object.entries(raw).flatMap(([protocolName, protocolData]) =>
+        Object.entries(protocolData.actions ?? {}).map(
+          ([actionName, step]) => ({ ...step, protocol: protocolName, action: actionName }),
+        ),
+      )
+    : undefined;
+
+  return {
+    ...base,
+    protocols: raw,
+    actions,
   };
 }

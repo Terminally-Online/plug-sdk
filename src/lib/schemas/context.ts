@@ -149,6 +149,7 @@ export type ContextActionOutputInfo = z.infer<
 export type ContextStep = z.infer<typeof ContextStepSchema>;
 export type ContextProtocol = z.infer<typeof ContextProtocolSchema>;
 export type Context = z.infer<typeof ContextSchema>;
+export type ContextFilter = z.infer<typeof ContextFilterSchema>;
 export type ContextQueryParams = AddressParams &
   z.infer<typeof ContextQueryParamsSchema>;
 export type ContextResponse = z.infer<typeof ContextResponseSchema>;
