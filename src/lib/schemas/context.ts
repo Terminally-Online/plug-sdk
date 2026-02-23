@@ -15,9 +15,9 @@ export const ContextStepAttributesSchema = z.object({
 });
 
 const baseContextStepOptionSchema = z.object({
-  label: z.string(),
+  label: z.string().optional(),
   name: z.string().optional(),
-  value: z.string(),
+  value: z.string().optional(),
   icons: z.array(z.string()).optional(),
 });
 
