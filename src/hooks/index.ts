@@ -8,4 +8,6 @@ export * from "./transaction/useCompile";
 export * from "./transaction/useGetTransaction";
 export * from "./transaction/useCreateTransaction";
 
+export * from "./cdn/useColor";
+
 export * from "./usePlug";

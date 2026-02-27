@@ -27,6 +27,7 @@ import {
   GetTransactionsQueryParams,
   GetTransactionsResponseSchema,
 } from "@/src/lib/schemas/transaction";
+import { ColorQueryParams, ColorResponseSchema } from "@/src/lib/schemas/cdn";
 
 type EndpointParams = Record<string, any>;
 type EndpointOptions<T> = {
@@ -128,11 +129,12 @@ export class PlugClient {
   }
 
   private createValidator<T>(schema: z.ZodSchema<T>) {
-    return (data: unknown): T => {
+    return (data: unknown, url?: string): T => {
       const result = schema.safeParse(data);
       if (!result.success) {
         throw new PlugValidationError(
-          "Invalid response format: " + JSON.stringify(result.error.issues),
+          `Invalid response format for ${url ? ` for ${url}` : ""} : ` +
+            JSON.stringify(result.error.issues),
           result.error.issues,
         );
       }
@@ -165,7 +167,7 @@ export class PlugClient {
             ? urlPath
             : `${self.config.baseUrl}${urlPath}`;
           const data = await self.request<unknown>(url, { method });
-          return self.createValidator(responseSchema)(data);
+          return self.createValidator(responseSchema)(data, url);
         },
       });
     };
@@ -181,11 +183,15 @@ export class PlugClient {
     method: string = "GET",
   ): Promise<z.infer<TSchema>> {
     try {
-      const { address, ...queryParams } = params;
-      const processedParams = buildQueryParams(queryParams);
-      const url = this.createUrl(`/${address}${path}`, processedParams);
+      const { address, url: full, ...query } = params;
+      const processed = buildQueryParams(query);
+      const url = full
+        ? `${
+            full.startsWith("http") ? full : `${this.config.baseUrl}${full}`
+          }${path}`
+        : this.createUrl(`/address/${address}${path}`, processed);
       const data = await this.request<unknown>(url, { method });
-      const validated = this.createValidator(responseSchema)(data);
+      const validated = this.createValidator(responseSchema)(data, url);
 
       this.config.onSuccess(validated);
 
@@ -233,4 +239,9 @@ export class PlugClient {
     "/transaction/",
     "PUT",
   )(CompileTransactionResponseSchema);
+
+  readonly getColor = this.endpoint<ColorQueryParams>(
+    "/color",
+    "GET",
+  )(ColorResponseSchema);
 }
