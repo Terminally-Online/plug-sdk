@@ -21,19 +21,24 @@ const baseContextStepOptionSchema = z.object({
   icons: z.array(z.string()).optional(),
 });
 
-export const ContextStepOptionSchema: z.ZodType<
-  z.infer<typeof baseContextStepOptionSchema> & {
-    info?: z.infer<typeof baseContextStepOptionSchema> & { info?: unknown };
-  }
-> = baseContextStepOptionSchema.extend({
-  info: z.lazy(() => ContextStepOptionSchema).optional(),
-});
+export interface ContextStepOptionType {
+  label?: string;
+  name?: string;
+  value?: string;
+  icons?: string[];
+  info?: ContextStepOptionType;
+}
+
+export const ContextStepOptionSchema: z.ZodType<ContextStepOptionType> =
+  baseContextStepOptionSchema.extend({
+    info: z.lazy(() => ContextStepOptionSchema).optional(),
+  });
 export interface IContextStepOption {
-  [key: string]: z.infer<typeof ContextStepOptionSchema>[] | IContextStepOption;
+  [key: string]: ContextStepOptionType[] | IContextStepOption;
 }
 
 const contextStepOptionsSchema: z.ZodType<
-  z.infer<typeof ContextStepOptionSchema>[] | IContextStepOption
+  ContextStepOptionType[] | IContextStepOption
 > = z.union([
   z.array(ContextStepOptionSchema),
   z.lazy(() => z.record(z.string(), contextStepOptionsSchema)),
