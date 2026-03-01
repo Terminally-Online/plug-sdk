@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   QueryObserverResult,
   RefetchOptions,
   useQuery,
@@ -22,6 +23,7 @@ export type UseContextOptions = Omit<ContextQueryParams, "address"> & {
 
 type UseContextBase = {
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   refetch: (
     options?: RefetchOptions,
@@ -82,11 +84,13 @@ export function useContext(
     queryKey: QueryKeys.context(address || "", filter, search),
     queryFn: () => client.getContext({ address: address!, filter, search }),
     enabled: enabled && !!address,
+    placeholderData: search ? keepPreviousData : undefined,
   });
 
   const raw = result.data?.data ?? undefined;
   const base: UseContextBase = {
     isLoading: result.isLoading,
+    isFetching: result.isFetching,
     error: result.error,
     refetch: result.refetch,
   };
@@ -112,7 +116,11 @@ export function useContext(
   const actions = raw
     ? Object.entries(raw).flatMap(([protocolName, protocolData]) =>
         Object.entries(protocolData.actions ?? {}).map(
-          ([actionName, step]) => ({ ...step, protocol: protocolName, action: actionName }),
+          ([actionName, step]) => ({
+            ...step,
+            protocol: protocolName,
+            action: actionName,
+          }),
         ),
       )
     : undefined;

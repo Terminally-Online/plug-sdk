@@ -24,6 +24,7 @@ type UsePositionsBaseResult = {
   data: Address[];
   links: PositionsLinks;
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   refetch: () => void;
 };
@@ -116,6 +117,7 @@ export function usePositions(
       isFetchingNextPage: result.isFetchingNextPage,
       isFetchingPreviousPage: result.isFetchingPreviousPage,
       isLoading: result.isLoading,
+      isFetching: result.isFetching,
       error: result.error,
       refetch: result.refetch,
     };
@@ -148,6 +150,7 @@ export function usePositions(
     data: result.data?.data ?? [],
     links: result.data?.links,
     isLoading: result.isLoading,
+    isFetching: result.isFetching,
     error: result.error,
     refetch: result.refetch,
   };

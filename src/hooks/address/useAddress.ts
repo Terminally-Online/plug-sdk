@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { usePlugContext } from "@/src/provider";
 import { QueryKeys } from "@/src/config";
 
-export interface UseAddressOptions {
+export type UseAddressOptions = {
   enabled?: boolean;
-}
+};
 
 export function useAddress(
   address: string | undefined,
@@ -23,6 +23,7 @@ export function useAddress(
   return {
     ...result.data,
     isLoading: result.isLoading,
+    isFetching: result.isFetching,
     error: result.error,
     refetch: result.refetch,
   };

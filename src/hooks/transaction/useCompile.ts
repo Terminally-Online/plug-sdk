@@ -33,15 +33,22 @@ export function useCompile(
   }, [chainId, steps]);
 
   const result = useQuery({
-    queryKey: QueryKeys.compile(address || "", input as Record<string, unknown>),
+    queryKey: QueryKeys.compile(
+      address || "",
+      input as Record<string, unknown>,
+    ),
     queryFn: () =>
       client.compileTransaction({ address: address!, input: input! }),
     enabled: enabled && !!address && !!input,
   });
 
   return {
-    data: result.data?.data as Array<Record<string, CoilOption[]>> | null | undefined,
+    data: result.data?.data as
+      | Array<Record<string, CoilOption[]>>
+      | null
+      | undefined,
     isLoading: result.isLoading,
+    isFetching: result.isFetching,
     error: result.error,
     refetch: result.refetch,
   };

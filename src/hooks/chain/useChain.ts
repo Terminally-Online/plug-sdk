@@ -22,6 +22,7 @@ export function useChain(options: UseChainOptions = {}) {
   return {
     ...result.data,
     isLoading: result.isLoading,
+    isFetching: result.isFetching,
     error: result.error,
     refetch: result.refetch,
   };

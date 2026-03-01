@@ -49,6 +49,7 @@ export function useColor(
   return {
     ...result.data,
     isLoading: result.isLoading,
+    isFetching: result.isFetching,
     error: result.error,
     refetch: result.refetch,
   };
