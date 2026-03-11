@@ -87,6 +87,23 @@ export const QueryKeys = {
   compile: (address: string, input?: Record<string, unknown>) =>
     [...QueryKeys.all, "compile", address, stableStringify(input)] as const,
 
+  series: (
+    address: string,
+    filter?: Record<string, unknown>,
+    time?: Record<string, unknown>,
+    sort?: Record<string, unknown>,
+    limit?: Record<string, unknown>,
+  ) =>
+    [
+      ...QueryKeys.all,
+      "series",
+      address,
+      stableStringify(filter),
+      stableStringify(time),
+      stableStringify(sort),
+      stableStringify(limit),
+    ] as const,
+
   color: (url: string) => [...QueryKeys.all, "_color", url] as const,
 } as const;
 

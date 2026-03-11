@@ -1,6 +1,7 @@
 export * from "./address/useAddress";
 export * from "./address/useContext";
 export * from "./address/usePositions";
+export * from "./address/useSeries";
 
 export * from "./chain/useChain";
 

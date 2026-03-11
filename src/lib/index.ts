@@ -6,6 +6,7 @@ export * from "./schemas/context"
 export * from "./schemas/external"
 export * from "./schemas/response"
 export * from "./schemas/cdn"
+export * from "./schemas/series"
 export * from "./schemas/transaction"
 
 export * from "./types/evm"

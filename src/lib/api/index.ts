@@ -33,6 +33,10 @@ import {
   CreateTransactionQueryParamsSchema,
   CreateTransactionResponseSchema,
 } from "@/src/lib/schemas/transaction";
+import {
+  SeriesQueryParamsSchema,
+  SeriesResponseSchema,
+} from "@/src/lib/schemas/series";
 
 export const API_BASE_URL = "https://api.plug.to";
 
@@ -356,6 +360,18 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     pathParams: AddressParamsSchema,
     queryParams: CreateTransactionQueryParamsSchema,
     responseSchema: CreateTransactionResponseSchema,
+  },
+  {
+    operationId: "getSeries",
+    method: "GET",
+    path: "/address/{address}/history",
+    summary: "Get series",
+    description:
+      "Returns time-series data for the provided address including price OHLC, balance history, and portfolio value over time.",
+    tag: "address",
+    pathParams: AddressParamsSchema,
+    queryParams: SeriesQueryParamsSchema,
+    responseSchema: SeriesResponseSchema,
   },
   {
     operationId: "getChains",

@@ -27,6 +27,10 @@ import {
   GetTransactionsQueryParams,
   GetTransactionsResponseSchema,
 } from "@/src/lib/schemas/transaction";
+import {
+  SeriesQueryParams,
+  SeriesResponseSchema,
+} from "@/src/lib/schemas/series";
 import { ColorQueryParams, ColorResponseSchema } from "@/src/lib/schemas/cdn";
 
 type EndpointParams = Record<string, any>;
@@ -239,6 +243,11 @@ export class PlugClient {
     "/transaction/",
     "PUT",
   )(CompileTransactionResponseSchema);
+
+  readonly getSeries = this.endpoint<SeriesQueryParams>(
+    "/history",
+    "GET",
+  )(SeriesResponseSchema);
 
   readonly getColor = this.endpoint<ColorQueryParams>(
     "/color",
