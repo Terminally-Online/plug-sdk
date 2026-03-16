@@ -3,10 +3,9 @@ import { z } from "zod"
 import { RecursiveStringMapSchema } from "@/src/lib/schemas/address"
 import { createResponseSchema } from "@/src/lib/schemas/response"
 
-export const SeriesEntrySchema = z.object({
-	timestamp: z.number(),
-	attributes: RecursiveStringMapSchema,
-})
+export const SeriesEntrySchema = z
+	.object({ timestamp: z.number() })
+	.catchall(z.union([z.string(), RecursiveStringMapSchema]))
 
 export const SeriesSchema = z.array(SeriesEntrySchema)
 
