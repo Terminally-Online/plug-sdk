@@ -97,6 +97,11 @@ export const ContextStepSchema = z.object({
   options: ContextStepOptionsSchema.optional(),
 });
 
+export const ContextActionSchema = ContextStepSchema.extend({
+  protocol: z.string(),
+  action: z.string(),
+});
+
 export const ContextProtocolSchema = z.object({
   name: z.string(),
   symbol: z.string(),
@@ -158,3 +163,4 @@ export type ContextFilter = z.infer<typeof ContextFilterSchema>;
 export type ContextQueryParams = AddressParams &
   z.infer<typeof ContextQueryParamsSchema>;
 export type ContextResponse = z.infer<typeof ContextResponseSchema>;
+export type ContextAction = z.infer<typeof ContextActionSchema>;

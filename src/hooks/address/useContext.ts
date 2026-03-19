@@ -10,6 +10,7 @@ import { QueryKeys } from "@/src/config";
 
 import {
   Context,
+  ContextAction,
   ContextFilter,
   ContextProtocol,
   ContextQueryParams,
@@ -39,8 +40,6 @@ export type UseContextProtocolResult = UseContextBase & {
   protocol: ContextProtocol | undefined;
   actions: Record<string, ContextStep> | undefined;
 };
-
-export type ContextAction = ContextStep & { protocol: string; action: string };
 
 export type UseContextFullResult = UseContextBase & {
   protocols: Context | undefined;
