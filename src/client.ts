@@ -4,6 +4,7 @@ import {
   PlugSDKError,
   PlugNetworkError,
   PlugValidationError,
+  type ResolvedPlugSDKConfig,
   type PlugSDKConfig,
 } from "@/src/types";
 import { createConfig } from "@/src/config";
@@ -39,8 +40,29 @@ type EndpointOptions<T> = {
   onError?: (error: Error) => void;
 };
 
+export interface AuthNonceResponse {
+  data: {
+    nonce: string;
+    expires_at: string;
+  };
+}
+
+export interface AuthTokenResponse {
+  data: {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  };
+}
+
+export interface AuthSessionResponse {
+  data: {
+    address: string;
+  };
+}
+
 export class PlugClient {
-  private config: Required<PlugSDKConfig>;
+  private config: ResolvedPlugSDKConfig;
 
   constructor(config?: Partial<PlugSDKConfig>) {
     this.config = createConfig(config);
@@ -58,10 +80,23 @@ export class PlugClient {
     return url.toString();
   }
 
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    if (!this.config.auth?.getAccessToken) return {};
+
+    try {
+      const token = await this.config.auth.getAccessToken();
+      if (!token) return {};
+      return { Authorization: `Bearer ${token}` };
+    } catch {
+      return {};
+    }
+  }
+
   private async request<T>(
     urlOrEndpoint: string,
     options: RequestInit = {},
     retries = this.config.retries,
+    isRetryAfter401 = false,
   ): Promise<T> {
     const url = urlOrEndpoint.startsWith("http")
       ? urlOrEndpoint
@@ -70,11 +105,14 @@ export class PlugClient {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
+    const authHeaders = await this.getAuthHeaders();
+
     try {
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
         headers: {
+          ...authHeaders,
           ...options.headers,
           ...(options.method &&
             ["POST", "PUT", "PATCH"].includes(options.method.toUpperCase()) && {
@@ -84,6 +122,28 @@ export class PlugClient {
       });
 
       clearTimeout(timeoutId);
+
+      if (
+        response.status === 401 &&
+        !isRetryAfter401 &&
+        this.config.auth?.onTokenExpired
+      ) {
+        const newToken = await this.config.auth.onTokenExpired();
+        if (newToken) {
+          return this.request<T>(
+            urlOrEndpoint,
+            {
+              ...options,
+              headers: {
+                ...options.headers,
+                Authorization: `Bearer ${newToken}`,
+              },
+            },
+            retries,
+            true,
+          );
+        }
+      }
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -214,6 +274,39 @@ export class PlugClient {
       throw sdkError;
     }
   }
+
+  // -- Auth endpoints --
+
+  readonly getNonce = async (): Promise<AuthNonceResponse> => {
+    return this.request<AuthNonceResponse>("/auth/nonce", { method: "GET" });
+  };
+
+  readonly verify = async (params: {
+    message: string;
+    signature: string;
+  }): Promise<AuthTokenResponse> => {
+    return this.request<AuthTokenResponse>("/auth/verify", {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
+  };
+
+  readonly refresh = async (params: {
+    refresh_token: string;
+  }): Promise<AuthTokenResponse> => {
+    return this.request<AuthTokenResponse>("/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
+  };
+
+  readonly getSession = async (): Promise<AuthSessionResponse> => {
+    return this.request<AuthSessionResponse>("/auth/session", {
+      method: "GET",
+    });
+  };
+
+  // -- Data endpoints --
 
   readonly getChain =
     this.endpoint<ChainQueryParams>("/chain")(ChainResponseSchema);

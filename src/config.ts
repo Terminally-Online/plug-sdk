@@ -1,8 +1,8 @@
-import type { PlugSDKConfig, CacheConfig } from "./types";
+import type { PlugSDKConfig, ResolvedPlugSDKConfig, CacheConfig } from "./types";
 
 const minute = 60 * 1000;
 
-export const DEFAULT_SDK_CONFIG: Required<PlugSDKConfig> = {
+export const DEFAULT_SDK_CONFIG: ResolvedPlugSDKConfig = {
   baseUrl: "https://api.plug.to",
   timeout: 30000,
   retries: 3,
@@ -109,7 +109,7 @@ export const QueryKeys = {
 
 export const createConfig = (
   userConfig?: Partial<PlugSDKConfig>,
-): Required<PlugSDKConfig> => {
+): ResolvedPlugSDKConfig => {
   return {
     ...DEFAULT_SDK_CONFIG,
     ...userConfig,
@@ -117,5 +117,6 @@ export const createConfig = (
       ...DEFAULT_SDK_CONFIG.cache,
       ...userConfig?.cache,
     },
+    auth: userConfig?.auth,
   };
 };

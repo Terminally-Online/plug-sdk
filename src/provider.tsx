@@ -9,11 +9,11 @@ import {
 
 import { PlugClient } from "@/src/client";
 import { createConfig } from "@/src/config";
-import type { PlugSDKConfig } from "@/src/types";
+import type { PlugSDKConfig, ResolvedPlugSDKConfig } from "@/src/types";
 
 interface PlugSDKContextValue {
   client: PlugClient;
-  config: Required<PlugSDKConfig>;
+  config: ResolvedPlugSDKConfig;
 }
 
 const PlugSDKContext = createContext<PlugSDKContextValue | null>(null);
@@ -25,7 +25,7 @@ interface PlugSDKProviderProps {
 }
 
 const createPlugQueryClient = (
-  sdkConfig: Required<PlugSDKConfig>,
+  sdkConfig: ResolvedPlugSDKConfig,
 ): QueryClient => {
   return new QueryClient({
     defaultOptions: {

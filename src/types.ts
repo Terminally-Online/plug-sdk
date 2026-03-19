@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+export interface PlugAuthConfig {
+    getAccessToken: () => Promise<string | null>
+    onTokenExpired?: () => Promise<string | null>
+}
+
 export interface PlugSDKConfig {
     baseUrl: string
     timeout?: number
@@ -8,9 +13,12 @@ export interface PlugSDKConfig {
         staleTime?: number
         gcTime?: number
     }
+    auth?: PlugAuthConfig
     onError?: (error: Error) => void
     onSuccess?: (data: unknown) => void
 }
+
+export type ResolvedPlugSDKConfig = Required<Omit<PlugSDKConfig, 'auth'>> & Pick<PlugSDKConfig, 'auth'>
 
 export class PlugSDKError extends Error {
     constructor(
