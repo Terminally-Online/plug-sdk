@@ -3,6 +3,7 @@ import { PlugClient } from "@/src/client";
 import { QueryKeys } from "@/src/config";
 import { PositionsQueryParams } from "@/src/lib/schemas/address";
 import { ContextQueryParams } from "@/src/lib/schemas/context";
+import { GetActivityQueryParams } from "@/src/lib/schemas/activity";
 import { GetTransactionsQueryParams } from "@/src/lib/schemas/transaction";
 import { ChainQueryParams } from "@/src/lib/schemas/chain";
 
@@ -71,6 +72,25 @@ export const context = async (
         address,
         filter: options?.filter,
         search: options?.search,
+      }),
+  });
+};
+
+export const activity = async (
+  { client, queryClient }: PrefetchOptions,
+  address: string,
+  options?: {
+    filter?: GetActivityQueryParams["filter"];
+    limit?: GetActivityQueryParams["limit"];
+  },
+) => {
+  return queryClient.prefetchQuery({
+    queryKey: QueryKeys.activity(address, options?.filter, options?.limit),
+    queryFn: () =>
+      client.getActivity({
+        address,
+        filter: options?.filter,
+        limit: options?.limit,
       }),
   });
 };

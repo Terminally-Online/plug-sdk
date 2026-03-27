@@ -21,6 +21,10 @@ import {
   ContextResponseSchema,
 } from "@/src/lib/schemas/context";
 import {
+  GetActivityQueryParams,
+  GetActivityResponseSchema,
+} from "@/src/lib/schemas/activity";
+import {
   CompileTransactionQueryParams,
   CompileTransactionResponseSchema,
   CreateTransactionQueryParams,
@@ -323,6 +327,11 @@ export class PlugClient {
     "/",
     "POST",
   )(ContextResponseSchema);
+
+  readonly getActivity = this.endpoint<GetActivityQueryParams>(
+    "/activity",
+    "GET",
+  )(GetActivityResponseSchema);
 
   readonly getTransactions = this.endpoint<GetTransactionsQueryParams>(
     "/transaction",

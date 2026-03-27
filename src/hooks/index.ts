@@ -1,3 +1,5 @@
+export * from "./activity/useActivity";
+
 export * from "./address/useAddress";
 export * from "./address/useContext";
 export * from "./address/usePositions";

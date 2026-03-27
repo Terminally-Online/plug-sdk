@@ -1,5 +1,6 @@
 export * from "./api"
 
+export * from "./schemas/activity"
 export * from "./schemas/address"
 export * from "./schemas/chain"
 export * from "./schemas/context"

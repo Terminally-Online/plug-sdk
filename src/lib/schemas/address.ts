@@ -160,10 +160,7 @@ export const PositionsActionSchema = z.object({
     .boolean()
     .optional()
     .describe("Refresh underlying metadata of returned items."),
-  visibility: z
-    .enum(["hidden", "pinned", ""])
-    .optional()
-    .describe("Set visibility: 'hidden', 'pinned', or '' to clear."),
+  hide: z.boolean().optional().describe("Hide positions from the response."),
 });
 export const PositionsSortSchema = z.object({
   by: z

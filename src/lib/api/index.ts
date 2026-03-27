@@ -28,6 +28,10 @@ import {
   ContextResponseSchema,
 } from "@/src/lib/schemas/context";
 import {
+  GetActivityQueryParamsSchema,
+  GetActivityResponseSchema,
+} from "@/src/lib/schemas/activity";
+import {
   GetTransactionsQueryParamsSchema,
   GetTransactionsResponseSchema,
   CreateTransactionQueryParamsSchema,
@@ -336,6 +340,18 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     pathParams: AddressParamsSchema,
     queryParams: ContextQueryParamsSchema,
     responseSchema: ContextResponseSchema,
+  },
+  {
+    operationId: "getActivity",
+    method: "GET",
+    path: "/address/{address}/activity",
+    summary: "Get activity",
+    description:
+      "Returns paginated on-chain transaction activity for the provided address, sorted by block number descending.",
+    tag: "address",
+    pathParams: AddressParamsSchema,
+    queryParams: GetActivityQueryParamsSchema,
+    responseSchema: GetActivityResponseSchema,
   },
   {
     operationId: "getTransactions",

@@ -76,6 +76,19 @@ export const QueryKeys = {
       stableStringify(search),
     ] as const,
 
+  activity: (
+    address: string,
+    filter?: Record<string, unknown>,
+    limit?: Record<string, unknown>,
+  ) =>
+    [
+      ...QueryKeys.all,
+      "activity",
+      address,
+      stableStringify(filter),
+      stableStringify(limit),
+    ] as const,
+
   transactions: (address: string, filter?: Record<string, unknown>) =>
     [
       ...QueryKeys.all,
