@@ -93,6 +93,7 @@ export const AddressSchema = z.object({
     .record(z.string(), z.array(AddressRelationshipSchema))
     .optional(),
   tokens: z.array(AddressRelationshipSchema).optional(),
+  visibility: z.string().optional(),
 });
 
 export const AddressParamsSchema = z.object({
@@ -133,6 +134,12 @@ export const PositionsFilterSchema = z.object({
     .boolean()
     .optional()
     .describe("Filter results to verified or unverified contracts."),
+  status: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Filter results by status. Supports 'pinned' and 'hidden' as special visibility filters.",
+    ),
 });
 export const PositionsSearchSchema = z.object({
   all: z.string().optional().describe("Search by name or symbol."),
@@ -161,6 +168,12 @@ export const PositionsActionSchema = z.object({
     .optional()
     .describe("Refresh underlying metadata of returned items."),
   hide: z.boolean().optional().describe("Hide positions from the response."),
+  visibility: z
+    .string()
+    .optional()
+    .describe(
+      "Set visibility for matched positions. Values: 'pinned', 'hidden', or '' (clear).",
+    ),
 });
 export const PositionsSortSchema = z.object({
   by: z
