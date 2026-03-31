@@ -10,10 +10,10 @@ export const SeriesEntrySchema = z
 export const SeriesSchema = z.array(SeriesEntrySchema)
 
 export const SeriesFilterSchema = z.object({
-	owner: z
+	address: z
 		.string()
 		.optional()
-		.describe("Owner address for token or collectible history."),
+		.describe("Token or contract address for token/collectible history."),
 	token_id: z
 		.string()
 		.optional()
