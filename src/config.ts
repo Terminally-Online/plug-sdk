@@ -1,9 +1,21 @@
-import type { PlugSDKConfig, ResolvedPlugSDKConfig, CacheConfig } from "./types";
+import type {
+  PlugSDKConfig,
+  ResolvedPlugSDKConfig,
+  CacheConfig,
+} from "./types";
 
 const minute = 60 * 1000;
 
+const PRODUCTION_URL = "https://api.plug.to";
+const DEVELOPMENT_URL = "http://localhost:8080";
+
+function resolveBaseUrl(): string {
+  if (process.env.NODE_ENV === "development") return DEVELOPMENT_URL;
+  return PRODUCTION_URL;
+}
+
 export const DEFAULT_SDK_CONFIG: ResolvedPlugSDKConfig = {
-  baseUrl: "https://api.plug.to",
+  baseUrl: resolveBaseUrl(),
   timeout: 30000,
   retries: 3,
   cache: {
@@ -123,9 +135,15 @@ export const QueryKeys = {
 export const createConfig = (
   userConfig?: Partial<PlugSDKConfig>,
 ): ResolvedPlugSDKConfig => {
+  const defined = userConfig
+    ? Object.fromEntries(
+        Object.entries(userConfig).filter(([, v]) => v !== undefined),
+      )
+    : {};
+
   return {
     ...DEFAULT_SDK_CONFIG,
-    ...userConfig,
+    ...defined,
     cache: {
       ...DEFAULT_SDK_CONFIG.cache,
       ...userConfig?.cache,
