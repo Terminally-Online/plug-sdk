@@ -42,7 +42,6 @@ import {
   SeriesResponseSchema,
 } from "@/src/lib/schemas/series";
 
-export const API_BASE_URL = "https://api.plug.to";
 
 export type HttpMethod = "GET" | "PUT" | "POST" | "DELETE";
 export type ParamLocation = "path" | "query" | "header";
