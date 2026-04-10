@@ -42,7 +42,6 @@ import {
   SeriesResponseSchema,
 } from "@/src/lib/schemas/series";
 
-
 export type HttpMethod = "GET" | "PUT" | "POST" | "DELETE";
 export type ParamLocation = "path" | "query" | "header";
 
@@ -358,7 +357,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/transaction",
     summary: "Get transaction(s)",
     description:
-      "Returns all transactions associated with the EVM address provided, after considering all applied filters.",
+      "Returns all saved Plug transactions associated with the EVM address provided, after considering all applied filters. Use this to list and review existing transaction records, not to compile new calldata.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     queryParams: GetTransactionsQueryParamsSchema,
@@ -370,7 +369,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/transaction",
     summary: "Create transaction",
     description:
-      "Constructs the transaction calldata and returns the transaction details ready for signing and submission.",
+      "Constructs and compiles transaction calldata from structured inputs, returning details ready for signing and submission. This is the build step — use GET /transaction to list existing records.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     queryParams: CreateTransactionQueryParamsSchema,
