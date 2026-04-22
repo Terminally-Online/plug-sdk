@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { usePlugContext } from "@/src/provider";
-import { QueryKeys } from "@/src/config";
-import { CreateTransactionQueryParams } from "@/src/lib/schemas/transaction";
+import { usePlugContext } from "../../provider";
+import { QueryKeys } from "../../config";
+import { CreateTransactionQueryParams } from "../../lib/schemas/transaction";
 
 export interface UseCreateTransactionOptions {
   onSuccess?: (data: any) => void;

@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 
-import { QueryKeys } from "@/src/config";
+import { QueryKeys } from "../../config";
 
 import {
   PositionsQueryParams,
   PositionsResponse,
   Address,
-} from "@/src/lib/schemas/address";
-import { usePlugContext } from "@/src/provider";
+} from "../../lib/schemas/address";
+import { usePlugContext } from "../../provider";
 
 export type UsePositionsOptions = Omit<PositionsQueryParams, "address"> & {
   enabled?: boolean;

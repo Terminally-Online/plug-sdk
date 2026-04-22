@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
-import { QueryKeys } from "@/src/config";
+import { QueryKeys } from "../../config";
 import {
   Activity,
   GetActivityQueryParams,
   GetActivityResponse,
-} from "@/src/lib/schemas/activity";
-import { usePlugContext } from "@/src/provider";
+} from "../../lib/schemas/activity";
+import { usePlugContext } from "../../provider";
 
 export type UseActivityOptions = Omit<GetActivityQueryParams, "address"> & {
   enabled?: boolean;

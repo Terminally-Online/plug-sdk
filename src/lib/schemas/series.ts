@@ -1,7 +1,7 @@
 import { z } from "zod"
 
-import { RecursiveStringMapSchema } from "@/src/lib/schemas/address"
-import { createResponseSchema } from "@/src/lib/schemas/response"
+import { RecursiveStringMapSchema } from "./address"
+import { createResponseSchema } from "./response"
 
 export const SeriesEntrySchema = z
 	.object({ timestamp: z.number() })

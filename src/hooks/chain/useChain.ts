@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { usePlugContext } from "@/src/provider";
-import { QueryKeys } from "@/src/config";
-import { ChainQueryParams } from "@/src/lib/schemas/chain";
+import { usePlugContext } from "../../provider";
+import { QueryKeys } from "../../config";
+import { ChainQueryParams } from "../../lib/schemas/chain";
 
 export interface UseChainOptions {
   enabled?: boolean;

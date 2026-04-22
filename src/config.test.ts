@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createConfig, DEFAULT_SDK_CONFIG, QueryKeys } from "@/src/config";
+import { createConfig, DEFAULT_SDK_CONFIG, QueryKeys } from "./config";
 
 describe("createConfig", () => {
   it("should return defaults when no config provided", () => {

@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { usePlugContext } from "@/src/provider";
-import { QueryKeys } from "@/src/config";
+import { usePlugContext } from "../../provider";
+import { QueryKeys } from "../../config";
 import {
   CompileTransactionQueryParams,
   type CoilOption,
-} from "@/src/lib/schemas/transaction";
+} from "../../lib/schemas/transaction";
 
 export interface UseCompileOptions {
   enabled?: boolean;
@@ -14,10 +14,7 @@ export interface UseCompileOptions {
   steps?: Array<{ protocol: string; step: string }>;
 }
 
-export function useCompile(
-  address: string | undefined,
-  options: UseCompileOptions = {},
-) {
+export function useCompile(options: UseCompileOptions = {}) {
   const { client } = usePlugContext();
   const { enabled = true, chainId, steps } = options;
 
@@ -33,13 +30,9 @@ export function useCompile(
   }, [chainId, steps]);
 
   const result = useQuery({
-    queryKey: QueryKeys.compile(
-      address || "",
-      input as Record<string, unknown>,
-    ),
-    queryFn: () =>
-      client.compileTransaction({ address: address!, input: input! }),
-    enabled: enabled && !!address && !!input,
+    queryKey: QueryKeys.compile(input as Record<string, unknown>),
+    queryFn: () => client.compileTransaction({ input: input! }),
+    enabled: enabled && !!input,
   });
 
   return {

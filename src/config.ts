@@ -109,8 +109,8 @@ export const QueryKeys = {
       stableStringify(filter),
     ] as const,
 
-  compile: (address: string, input?: Record<string, unknown>) =>
-    [...QueryKeys.all, "compile", address, stableStringify(input)] as const,
+  compile: (input?: Record<string, unknown>) =>
+    [...QueryKeys.all, "compile", stableStringify(input)] as const,
 
   series: (
     address: string,

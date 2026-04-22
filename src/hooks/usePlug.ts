@@ -1,5 +1,5 @@
-import { usePlugContext, usePlugQueryClient } from "@/src/provider";
-import * as fns from "@/src/fetch";
+import { usePlugContext, usePlugQueryClient } from "../provider";
+import * as fns from "../fetch";
 
 export const usePlug = () => {
   const { client } = usePlugContext();

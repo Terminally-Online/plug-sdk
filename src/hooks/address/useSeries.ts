@@ -1,14 +1,14 @@
 import { useMemo } from "react"
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query"
 
-import { QueryKeys } from "@/src/config"
+import { QueryKeys } from "../../config"
 
 import {
 	SeriesQueryParams,
 	SeriesResponse,
 	SeriesEntry,
-} from "@/src/lib/schemas/series"
-import { usePlugContext } from "@/src/provider"
+} from "../../lib/schemas/series"
+import { usePlugContext } from "../../provider"
 
 export type UseSeriesOptions = Omit<SeriesQueryParams, "address"> & {
 	enabled?: boolean

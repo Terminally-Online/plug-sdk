@@ -1,4 +1,4 @@
-import { ResponseError } from "@/src/lib/schemas/response";
+import { ResponseError } from "../schemas/response";
 
 export const isErrorResponse = (data: unknown): data is ResponseError => {
   return (

@@ -5,8 +5,8 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 
-import { usePlugContext } from "@/src/provider";
-import { QueryKeys } from "@/src/config";
+import { usePlugContext } from "../../provider";
+import { QueryKeys } from "../../config";
 
 import {
   Context,
@@ -16,7 +16,7 @@ import {
   ContextQueryParams,
   ContextResponse,
   ContextStep,
-} from "@/src/lib/schemas/context";
+} from "../../lib/schemas/context";
 
 export type UseContextOptions = Omit<ContextQueryParams, "address"> & {
   enabled?: boolean;

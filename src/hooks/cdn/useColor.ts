@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { QueryKeys } from "@/src/config";
-import { usePlugContext } from "@/src/provider";
-import { base64UrlEncode } from "@/src/lib/functions/encoding";
+import { QueryKeys } from "../../config";
+import { usePlugContext } from "../../provider";
+import { base64UrlEncode } from "../../lib/functions/encoding";
 
 export const DEFAULT_COLOR = "#E9EEE5";
 export const DEFAULT_TEXT_COLOR = "#000000";

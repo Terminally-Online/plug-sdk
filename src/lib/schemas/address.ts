@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createResponseSchema } from "@/src/lib/schemas/response";
+import { createResponseSchema } from "./response";
 
 export type RecursiveStringMap = { [key: string]: string | RecursiveStringMap };
 

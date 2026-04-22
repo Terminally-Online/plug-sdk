@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { ExternalSchema } from "@/src/lib/schemas/external";
-import { createResponseSchema } from "@/src/lib/schemas/response";
+import { ExternalSchema } from "./external";
+import { createResponseSchema } from "./response";
 
 export const ChainSchema = z.object({
   chain_id: z.number(),

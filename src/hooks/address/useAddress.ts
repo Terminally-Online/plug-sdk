@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { usePlugContext } from "@/src/provider";
-import { QueryKeys } from "@/src/config";
+import { usePlugContext } from "../../provider";
+import { QueryKeys } from "../../config";
 
 export type UseAddressOptions = {
   enabled?: boolean;

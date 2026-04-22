@@ -7,9 +7,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { PlugClient } from "@/src/client";
-import { createConfig } from "@/src/config";
-import type { PlugSDKConfig, ResolvedPlugSDKConfig } from "@/src/types";
+import { PlugClient } from "./client";
+import { createConfig } from "./config";
+import type { PlugSDKConfig, ResolvedPlugSDKConfig } from "./types";
 
 interface PlugSDKContextValue {
   client: PlugClient;

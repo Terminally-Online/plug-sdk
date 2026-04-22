@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isConstantType, getTypeDescription, getInputPlaceholder } from "@/src/input/input";
+import { isConstantType, getTypeDescription, getInputPlaceholder } from "./input";
 
 describe("isConstantType", () => {
   it("should identify constant types", () => {

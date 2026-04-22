@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { isApiResponse, isErrorResponse } from "@/src/lib/functions/response";
+import { isApiResponse, isErrorResponse } from "../lib/functions/response";
 
 export interface UseEndpointOptions {
   enabled?: boolean;
