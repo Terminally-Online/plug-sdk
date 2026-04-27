@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { transformSentence, formatActionName, getCommonPrefix } from "@/src/utils";
+import { transformSentence, formatActionName, getCommonPrefix } from "./utils";
 
 describe("transformSentence", () => {
   it("should transform simple name placeholder", () => {

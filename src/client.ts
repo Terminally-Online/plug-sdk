@@ -6,24 +6,24 @@ import {
   PlugValidationError,
   type ResolvedPlugSDKConfig,
   type PlugSDKConfig,
-} from "@/src/types";
-import { createConfig } from "@/src/config";
-import { buildQueryParams } from "@/src/client/query";
-import { ChainQueryParams, ChainResponseSchema } from "@/src/lib/schemas/chain";
+} from "./types";
+import { createConfig } from "./config";
+import { buildQueryParams } from "./client/query";
+import { ChainQueryParams, ChainResponseSchema } from "./lib/schemas/chain";
 import {
   AddressParams,
   AddressResponseSchema,
   PositionsQueryParams,
   PositionsResponseSchema,
-} from "@/src/lib/schemas/address";
+} from "./lib/schemas/address";
 import {
   ContextQueryParams,
   ContextResponseSchema,
-} from "@/src/lib/schemas/context";
+} from "./lib/schemas/context";
 import {
   GetActivityQueryParams,
   GetActivityResponseSchema,
-} from "@/src/lib/schemas/activity";
+} from "./lib/schemas/activity";
 import {
   CompileTransactionQueryParams,
   CompileTransactionResponseSchema,
@@ -31,17 +31,46 @@ import {
   CreateTransactionResponseSchema,
   GetTransactionsQueryParams,
   GetTransactionsResponseSchema,
-} from "@/src/lib/schemas/transaction";
+} from "./lib/schemas/transaction";
 import {
   SeriesQueryParams,
   SeriesResponseSchema,
-} from "@/src/lib/schemas/series";
-import { ColorQueryParams, ColorResponseSchema } from "@/src/lib/schemas/cdn";
+} from "./lib/schemas/series";
+import { ColorQueryParams, ColorResponseSchema } from "./lib/schemas/cdn";
 
 type EndpointParams = Record<string, any>;
 type EndpointOptions<T> = {
   onData: (data: T) => void;
   onError?: (error: Error) => void;
+};
+
+export type EndpointScope = "root" | "address";
+export type EndpointMethod = "GET" | "PUT" | "POST" | "DELETE";
+
+export interface EndpointMeta {
+  method: EndpointMethod;
+  scope: EndpointScope;
+  path: string;
+  displayPath: string;
+  summary: string;
+  paramsSchema?: z.ZodSchema;
+  responseSchema?: z.ZodSchema;
+}
+
+interface EndpointRegistration {
+  scope?: EndpointScope;
+  summary: string;
+  displayPath?: string;
+  paramsSchema?: z.ZodSchema;
+}
+
+const computeDisplayPath = (
+  scope: EndpointScope,
+  path: string,
+  override?: string,
+): string => {
+  if (override) return override;
+  return scope === "root" ? path : `/address/{address}${path}`;
 };
 
 export interface AuthNonceResponse {
@@ -68,8 +97,43 @@ export interface AuthSessionResponse {
 export class PlugClient {
   private config: ResolvedPlugSDKConfig;
 
+  readonly endpoints: EndpointMeta[] = [];
+
   constructor(config?: Partial<PlugSDKConfig>) {
     this.config = createConfig(config);
+
+    this.registerEndpoint({
+      method: "GET",
+      scope: "root",
+      path: "/auth/nonce",
+      displayPath: "/auth/nonce",
+      summary: "Generate a one-time nonce for SIWE message signing.",
+    });
+    this.registerEndpoint({
+      method: "POST",
+      scope: "root",
+      path: "/auth/verify",
+      displayPath: "/auth/verify",
+      summary: "Verify a SIWE signature and issue access + refresh tokens.",
+    });
+    this.registerEndpoint({
+      method: "POST",
+      scope: "root",
+      path: "/auth/refresh",
+      displayPath: "/auth/refresh",
+      summary: "Rotate the access and refresh token pair.",
+    });
+    this.registerEndpoint({
+      method: "GET",
+      scope: "root",
+      path: "/auth/session",
+      displayPath: "/auth/session",
+      summary: "Resolve the authenticated address for the current session.",
+    });
+  }
+
+  private registerEndpoint(meta: EndpointMeta): void {
+    this.endpoints.push(meta);
   }
 
   private createUrl(endpoint: string, params?: URLSearchParams): string {
@@ -212,9 +276,21 @@ export class PlugClient {
 
   private endpoint<TParams extends EndpointParams>(
     path: string,
-    method: "GET" | "PUT" | "POST" | "DELETE" = "GET",
+    method: EndpointMethod = "GET",
+    registration: EndpointRegistration = { summary: "" },
   ) {
+    const scope: EndpointScope = registration.scope ?? "address";
     return <TSchema extends z.ZodSchema>(responseSchema: TSchema) => {
+      this.registerEndpoint({
+        method,
+        scope,
+        path,
+        displayPath: computeDisplayPath(scope, path, registration.displayPath),
+        summary: registration.summary,
+        paramsSchema: registration.paramsSchema,
+        responseSchema,
+      });
+
       const self = this;
 
       function endpoint(params: TParams): Promise<z.infer<TSchema>>;
@@ -226,7 +302,7 @@ export class PlugClient {
         params: TParams,
         _?: EndpointOptions<z.infer<TSchema>>,
       ): Promise<z.infer<TSchema>> | (() => void) {
-        return self.requestEndpoint(path, params, responseSchema, method);
+        return self.requestEndpoint(path, params, responseSchema, method, scope);
       }
 
       return Object.assign(endpoint, {
@@ -249,15 +325,18 @@ export class PlugClient {
     params: TParams,
     responseSchema: TSchema,
     method: string = "GET",
+    scope: EndpointScope = "address",
   ): Promise<z.infer<TSchema>> {
     try {
       const { address, url: full, ...query } = params;
       const processed = buildQueryParams(query);
+      const scopedPath =
+        scope === "root" ? path : `/address/${address}${path}`;
       const url = full
         ? `${
             full.startsWith("http") ? full : `${this.config.baseUrl}${full}`
           }${path}`
-        : this.createUrl(`/address/${address}${path}`, processed);
+        : this.createUrl(scopedPath, processed);
       const data = await this.request<unknown>(url, { method });
       const validated = this.createValidator(responseSchema)(data, url);
 
@@ -312,47 +391,59 @@ export class PlugClient {
 
   // -- Data endpoints --
 
-  readonly getChain =
-    this.endpoint<ChainQueryParams>("/chain")(ChainResponseSchema);
+  readonly getChain = this.endpoint<ChainQueryParams>("/chain", "GET", {
+    scope: "root",
+    summary: "List supported chains with metadata and protocol coverage.",
+  })(ChainResponseSchema);
 
-  readonly getAddress = this.endpoint<AddressParams>(
-    "/",
-    "GET",
-  )(AddressResponseSchema);
-  readonly getPositions = this.endpoint<PositionsQueryParams>(
-    "/",
-    "PUT",
-  )(PositionsResponseSchema);
-  readonly getContext = this.endpoint<ContextQueryParams>(
-    "/",
-    "POST",
-  )(ContextResponseSchema);
+  readonly getAddress = this.endpoint<AddressParams>("/", "GET", {
+    summary: "Address metadata, graph flags, and signal data.",
+  })(AddressResponseSchema);
+  readonly getPositions = this.endpoint<PositionsQueryParams>("/", "PUT", {
+    summary:
+      "Fungible, non-fungible, and non-tokenized positions across chains.",
+  })(PositionsResponseSchema);
+  readonly getContext = this.endpoint<ContextQueryParams>("/", "POST", {
+    summary:
+      "Action options, valid inputs, and address-scoped context for building transactions.",
+  })(ContextResponseSchema);
 
   readonly getActivity = this.endpoint<GetActivityQueryParams>(
     "/activity",
     "GET",
+    { summary: "Activity log with filtering across supported chains." },
   )(GetActivityResponseSchema);
 
   readonly getTransactions = this.endpoint<GetTransactionsQueryParams>(
     "/transaction",
     "GET",
+    { summary: "Transaction history with filtering across supported chains." },
   )(GetTransactionsResponseSchema);
   readonly createTransaction = this.endpoint<CreateTransactionQueryParams>(
     "/transaction",
     "POST",
+    {
+      summary:
+        "Build and persist transaction calldata ready for signing and submission.",
+    },
   )(CreateTransactionResponseSchema);
   readonly compileTransaction = this.endpoint<CompileTransactionQueryParams>(
     "/transaction/",
     "PUT",
+    {
+      scope: "root",
+      summary:
+        "Compile an action sequence into coil options and output manifests.",
+    },
   )(CompileTransactionResponseSchema);
 
-  readonly getSeries = this.endpoint<SeriesQueryParams>(
-    "/history",
-    "GET",
-  )(SeriesResponseSchema);
+  readonly getSeries = this.endpoint<SeriesQueryParams>("/history", "GET", {
+    summary: "Time-series historical data for an address.",
+  })(SeriesResponseSchema);
 
-  readonly getColor = this.endpoint<ColorQueryParams>(
-    "/color",
-    "GET",
-  )(ColorResponseSchema);
+  readonly getColor = this.endpoint<ColorQueryParams>("/color", "GET", {
+    scope: "root",
+    displayPath: "/cdn/{encoded_url}/color",
+    summary: "Dominant color palette for a CDN resource.",
+  })(ColorResponseSchema);
 }

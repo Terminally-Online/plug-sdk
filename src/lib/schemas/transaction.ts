@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { createResponseSchema } from "@/src/lib/schemas/response";
-import { AddressParams } from "@/src/lib/schemas/address";
+import { createResponseSchema } from "./response";
+import { AddressParams } from "./address";
 
 export const TransactionInputSchema = z.object({
   protocol: z.string(),
@@ -91,8 +91,9 @@ export const CompileTransactionResponseSchema = createResponseSchema(
 );
 
 export type CoilOption = z.infer<typeof CoilOptionSchema>;
-export type CompileTransactionQueryParams = AddressParams &
-  z.infer<typeof CompileTransactionQueryParamsSchema>;
+export type CompileTransactionQueryParams = z.infer<
+  typeof CompileTransactionQueryParamsSchema
+>;
 export type CompileTransactionResponse = z.infer<
   typeof CompileTransactionResponseSchema
 >;

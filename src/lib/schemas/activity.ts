@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { createResponseSchema } from "@/src/lib/schemas/response";
-import { AddressParams } from "@/src/lib/schemas/address";
+import { createResponseSchema } from "./response";
+import { AddressParams } from "./address";
 
 export const ActivityAddressSchema = z.object({
   address: z.string(),

@@ -1,4 +1,4 @@
-import { InputType } from "@/src/lib/types/sentence";
+import { InputType } from "../lib/types/sentence";
 
 export const isConstantType = (
   type: InputType | undefined,

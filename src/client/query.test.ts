@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildQueryParams } from "@/src/client/query";
+import { buildQueryParams } from "./query";
 
 const toObject = (params: URLSearchParams): Record<string, string[]> => {
   const result: Record<string, string[]> = {};

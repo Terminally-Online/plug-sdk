@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EvmTypeSchema } from "@/src/lib/types/evm";
+import { EvmTypeSchema } from "./evm";
 
 export const ConstantTypeSchema = z.object({
   constant: z.string(),

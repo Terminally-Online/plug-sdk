@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { usePlugContext } from "@/src/provider";
-import { QueryKeys } from "@/src/config";
-import { GetTransactionsQueryParams } from "@/src/lib/schemas/transaction";
+import { usePlugContext } from "../../provider";
+import { QueryKeys } from "../../config";
+import { GetTransactionsQueryParams } from "../../lib/schemas/transaction";
 
 export interface UseGetTransactionOptions {
   enabled?: boolean;

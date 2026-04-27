@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isErrorResponse, isApiResponse } from "@/src/lib/functions/response";
+import { isErrorResponse, isApiResponse } from "./response";
 
 describe("isErrorResponse", () => {
   it("should return true for valid error response", () => {

@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-import { createResponseSchema } from "@/src/lib/schemas/response";
-import { ChainSchema } from "@/src/lib/schemas/chain";
-import { AddressParams } from "@/src/lib/schemas/address";
+import { createResponseSchema } from "./response";
+import { ChainSchema } from "./chain";
+import { AddressParams } from "./address";
 import {
   InputReferenceSchema,
   InputTagsSchema,
-} from "@/src/lib/types/sentence";
+} from "../types/sentence";
 
 export const ContextStepAttributesSchema = z.object({
   "is:user_specific": z.boolean().optional(),

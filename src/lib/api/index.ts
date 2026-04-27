@@ -18,29 +18,29 @@ import {
   AddressResponseSchema,
   PositionsQueryParamsSchema,
   PositionsResponseSchema,
-} from "@/src/lib/schemas/address";
+} from "../schemas/address";
 import {
   ChainQueryParamsSchema,
   ChainResponseSchema,
-} from "@/src/lib/schemas/chain";
+} from "../schemas/chain";
 import {
   ContextQueryParamsSchema,
   ContextResponseSchema,
-} from "@/src/lib/schemas/context";
+} from "../schemas/context";
 import {
   GetActivityQueryParamsSchema,
   GetActivityResponseSchema,
-} from "@/src/lib/schemas/activity";
+} from "../schemas/activity";
 import {
   GetTransactionsQueryParamsSchema,
   GetTransactionsResponseSchema,
   CreateTransactionQueryParamsSchema,
   CreateTransactionResponseSchema,
-} from "@/src/lib/schemas/transaction";
+} from "../schemas/transaction";
 import {
   SeriesQueryParamsSchema,
   SeriesResponseSchema,
-} from "@/src/lib/schemas/series";
+} from "../schemas/series";
 
 export type HttpMethod = "GET" | "PUT" | "POST" | "DELETE";
 export type ParamLocation = "path" | "query" | "header";

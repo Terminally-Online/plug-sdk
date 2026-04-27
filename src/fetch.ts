@@ -1,11 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
-import { PlugClient } from "@/src/client";
-import { QueryKeys } from "@/src/config";
-import { PositionsQueryParams } from "@/src/lib/schemas/address";
-import { ContextQueryParams } from "@/src/lib/schemas/context";
-import { GetActivityQueryParams } from "@/src/lib/schemas/activity";
-import { GetTransactionsQueryParams } from "@/src/lib/schemas/transaction";
-import { ChainQueryParams } from "@/src/lib/schemas/chain";
+import { PlugClient } from "./client";
+import { QueryKeys } from "./config";
+import { PositionsQueryParams } from "./lib/schemas/address";
+import { ContextQueryParams } from "./lib/schemas/context";
+import { GetActivityQueryParams } from "./lib/schemas/activity";
+import { GetTransactionsQueryParams } from "./lib/schemas/transaction";
+import { ChainQueryParams } from "./lib/schemas/chain";
 
 export interface PrefetchOptions {
   client: PlugClient;
