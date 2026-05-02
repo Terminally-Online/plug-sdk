@@ -39,7 +39,8 @@ export const attr = {
 
 export const AddressBalanceSchema = z.object({
   int: z.string(),
-  float: z.string(),
+  float: z.string().optional(),
+  decimals: z.number().optional(),
   value: z.string().optional(),
 });
 
@@ -54,6 +55,8 @@ export const AddressPriceSchema = z.object({
 });
 
 export const AddressRelationshipSchema = z.object({
+  chain_id: z.number().optional(),
+  address: z.string().optional(),
   token_id: z.string(),
   name: z.string().optional(),
   symbol: z.string().optional(),
@@ -113,7 +116,7 @@ export const PositionsFilterSchema = z.object({
       "Filter results to specific chains from the listed of supported options.",
     ),
   standard: z
-    .array(z.enum(["erc:20", "erc:721", "erc:1155", "erc:4626", "native"]))
+    .array(z.enum(["erc:20", "erc:721", "erc:1155", "erc:4626", "native", "position"]))
     .optional()
     .describe("Filter results to specific token standards."),
   protocol: z
