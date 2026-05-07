@@ -16,6 +16,7 @@ export const ContextStepAttributesSchema = z.object({
 
 const baseContextStepOptionSchema = z.object({
   label: z.string().optional(),
+  part: z.string().optional(),
   name: z.string().optional(),
   value: z.string().optional(),
   icons: z.array(z.string()).optional(),
@@ -23,6 +24,7 @@ const baseContextStepOptionSchema = z.object({
 
 export interface ContextStepOptionType {
   label?: string;
+  part?: string;
   name?: string;
   value?: string;
   icons?: string[];
