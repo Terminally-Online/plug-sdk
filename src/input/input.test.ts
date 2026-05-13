@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isConstantType, getTypeDescription, getInputPlaceholder } from "./input";
+import { isConstantType, isModeType, getTypeDescription, getInputPlaceholder } from "./input";
+import { InputTypeSchema, ModeTypeSchema } from "../lib/types/sentence";
 
 describe("isConstantType", () => {
   it("should identify constant types", () => {
@@ -98,5 +99,81 @@ describe("getInputPlaceholder", () => {
 
   it("should return generic fallback for union types", () => {
     expect(getInputPlaceholder({ types: ["uint256", "address"] })).toBe("Enter value");
+  });
+
+  it("should prompt for a verb on mode types", () => {
+    expect(getInputPlaceholder({ modes: ["is", "if", "assert"] })).toBe("Pick a verb");
+  });
+});
+
+describe("isModeType", () => {
+  it("identifies mode types and returns the declared modes", () => {
+    const result = isModeType({ modes: ["is", "if", "unless"] });
+    expect(result.isMode).toBe(true);
+    expect(result.modes).toEqual(["is", "if", "unless"]);
+  });
+
+  it("rejects EVM, constant, compound, and conditional types", () => {
+    expect(isModeType("uint256").isMode).toBe(false);
+    expect(isModeType({ constant: "42" }).isMode).toBe(false);
+    expect(isModeType({ type: "uint256", metadata: ["uint8"] }).isMode).toBe(false);
+    expect(
+      isModeType({
+        left: { literal: "1" },
+        operator: "==",
+        right: { reference: 0 },
+        trueType: "uint256",
+        falseType: "null",
+      }).isMode,
+    ).toBe(false);
+  });
+
+  it("rejects undefined", () => {
+    expect(isModeType(undefined).isMode).toBe(false);
+  });
+});
+
+describe("ModeTypeSchema", () => {
+  it("accepts the canonical 8-verb predicate shape gusher emits", () => {
+    const parsed = ModeTypeSchema.parse({
+      modes: ["is", "if", "unless", "else_if", "while", "until", "assert", "require"],
+    });
+    expect(parsed.modes.length).toBe(8);
+  });
+
+  it("accepts a declared subset", () => {
+    expect(ModeTypeSchema.parse({ modes: ["is"] }).modes).toEqual(["is"]);
+  });
+
+  it("rejects empty mode lists — every mode-typed slot must declare at least one verb", () => {
+    expect(() => ModeTypeSchema.parse({ modes: [] })).toThrow();
+  });
+
+  it("rejects unknown verbs so SDK drift surfaces loudly", () => {
+    expect(() => ModeTypeSchema.parse({ modes: ["switch"] })).toThrow();
+  });
+});
+
+describe("InputTypeSchema", () => {
+  it("accepts ModeType at the top level of an input slot", () => {
+    const parsed = InputTypeSchema.parse({ modes: ["is", "if", "assert"] });
+    expect(parsed).toEqual({ modes: ["is", "if", "assert"] });
+  });
+
+  it("still accepts the existing type shapes", () => {
+    expect(InputTypeSchema.parse("uint256")).toBe("uint256");
+    expect(InputTypeSchema.parse({ constant: "42" })).toEqual({ constant: "42" });
+    expect(InputTypeSchema.parse({ type: "uint256", metadata: ["uint8"] })).toEqual({
+      type: "uint256",
+      metadata: ["uint8"],
+    });
+  });
+});
+
+describe("getTypeDescription — mode type", () => {
+  it("describes mode types with the declared verbs", () => {
+    expect(getTypeDescription({ modes: ["is", "if", "assert"] })).toBe(
+      "Verb (is | if | assert)",
+    );
   });
 });

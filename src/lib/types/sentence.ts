@@ -5,6 +5,33 @@ export const ConstantTypeSchema = z.object({
   constant: z.string(),
 });
 
+// SentenceMode enumerates every verb a mode-discriminated sentence
+// (boolean.predicate today) can take. The list MUST stay in lockstep
+// with gusher's `actions.AllModes` constant — adding a mode here
+// without the corresponding gusher-side support produces actions the
+// compiler can't lower, and adding one in gusher without registering
+// it here causes zod validation to fail on every page load.
+export const SentenceModeSchema = z.union([
+  z.literal("is"),
+  z.literal("if"),
+  z.literal("unless"),
+  z.literal("else_if"),
+  z.literal("while"),
+  z.literal("until"),
+  z.literal("assert"),
+  z.literal("require"),
+]);
+
+// ModeType is the parsed representation of a `mode(...)` input slot.
+// Sentences declare an explicit subset of SentenceMode values in the
+// template; the parsed `modes` field carries that subset and the
+// renderer dispatches off it to surface a verb picker. Structurally
+// distinct from EvmType, ConstantType, CompoundType, etc. — the
+// presence of the `modes` key is the discriminator.
+export const ModeTypeSchema = z.object({
+  modes: z.array(SentenceModeSchema).min(1),
+});
+
 export const ComparisonOperatorSchema = z.union([
   z.literal("=="),
   z.literal(">"),
@@ -35,6 +62,7 @@ export const InputTypeSchema: z.ZodType<any> = z.lazy(() =>
   z.union([
     EvmTypeSchema,
     ConstantTypeSchema,
+    ModeTypeSchema,
     CompoundTypeSchema,
     ComparisonTypeSchema,
     UnionTypeSchema,
@@ -82,6 +110,8 @@ export const ParsedSentenceSchema = z.object({
 export type InputTag = z.infer<typeof InputTagSchema>;
 export type InputTags = z.infer<typeof InputTagsSchema>;
 export type ConstantType = z.infer<typeof ConstantTypeSchema>;
+export type SentenceMode = z.infer<typeof SentenceModeSchema>;
+export type ModeType = z.infer<typeof ModeTypeSchema>;
 export type SimpleUnionType = z.infer<typeof SimpleUnionTypeSchema>;
 export type CompoundType = z.infer<typeof CompoundTypeSchema>;
 export type ComparisonOperator = z.infer<typeof ComparisonOperatorSchema>;
