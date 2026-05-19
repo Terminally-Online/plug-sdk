@@ -14,11 +14,10 @@ export const ConstantTypeSchema = z.object({
 export const SentenceModeSchema = z.union([
   z.literal("is"),
   z.literal("if"),
-  z.literal("unless"),
+  z.literal("if_not"),
   z.literal("else_if"),
   z.literal("while"),
   z.literal("until"),
-  z.literal("assert"),
   z.literal("require"),
 ]);
 

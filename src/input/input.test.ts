@@ -102,15 +102,15 @@ describe("getInputPlaceholder", () => {
   });
 
   it("should prompt for a verb on mode types", () => {
-    expect(getInputPlaceholder({ modes: ["is", "if", "assert"] })).toBe("Pick a verb");
+    expect(getInputPlaceholder({ modes: ["is", "if", "require"] })).toBe("Pick a verb");
   });
 });
 
 describe("isModeType", () => {
   it("identifies mode types and returns the declared modes", () => {
-    const result = isModeType({ modes: ["is", "if", "unless"] });
+    const result = isModeType({ modes: ["is", "if", "if_not"] });
     expect(result.isMode).toBe(true);
-    expect(result.modes).toEqual(["is", "if", "unless"]);
+    expect(result.modes).toEqual(["is", "if", "if_not"]);
   });
 
   it("rejects EVM, constant, compound, and conditional types", () => {
@@ -134,11 +134,11 @@ describe("isModeType", () => {
 });
 
 describe("ModeTypeSchema", () => {
-  it("accepts the canonical 8-verb predicate shape gusher emits", () => {
+  it("accepts the canonical 7-verb predicate shape gusher emits", () => {
     const parsed = ModeTypeSchema.parse({
-      modes: ["is", "if", "unless", "else_if", "while", "until", "assert", "require"],
+      modes: ["is", "if", "if_not", "else_if", "while", "until", "require"],
     });
-    expect(parsed.modes.length).toBe(8);
+    expect(parsed.modes.length).toBe(7);
   });
 
   it("accepts a declared subset", () => {
@@ -156,8 +156,8 @@ describe("ModeTypeSchema", () => {
 
 describe("InputTypeSchema", () => {
   it("accepts ModeType at the top level of an input slot", () => {
-    const parsed = InputTypeSchema.parse({ modes: ["is", "if", "assert"] });
-    expect(parsed).toEqual({ modes: ["is", "if", "assert"] });
+    const parsed = InputTypeSchema.parse({ modes: ["is", "if", "require"] });
+    expect(parsed).toEqual({ modes: ["is", "if", "require"] });
   });
 
   it("still accepts the existing type shapes", () => {
@@ -172,8 +172,8 @@ describe("InputTypeSchema", () => {
 
 describe("getTypeDescription — mode type", () => {
   it("describes mode types with the declared verbs", () => {
-    expect(getTypeDescription({ modes: ["is", "if", "assert"] })).toBe(
-      "Verb (is | if | assert)",
+    expect(getTypeDescription({ modes: ["is", "if", "require"] })).toBe(
+      "Verb (is | if | require)",
     );
   });
 });
