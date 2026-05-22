@@ -67,72 +67,40 @@ export function usePositions(
 
   const isInfinite = "infinite" in options && options.infinite === true;
 
-  if (isInfinite) {
-    const result = useInfiniteQuery({
-      queryKey: [
-        ...QueryKeys.positions(
-          address || "",
-          filter,
-          search,
-          history,
-          action,
-          sort,
-          limit,
-        ),
-        "infinite",
-      ],
-      queryFn: async ({ pageParam }) => {
-        if (pageParam) {
-          return client.getPositions.byUrl(pageParam);
-        }
-        return client.getPositions({
-          address: address!,
-          filter,
-          search,
-          history,
-          action,
-          sort,
-          limit,
-        });
-      },
-      getNextPageParam: (lastPage) => lastPage.links?.next ?? undefined,
-      getPreviousPageParam: (firstPage) => firstPage.links?.prev ?? undefined,
-      initialPageParam: undefined as string | undefined,
-      enabled: enabled && !!address,
-    });
+  const queryKey = QueryKeys.positions(
+    address || "",
+    filter,
+    search,
+    history,
+    action,
+    sort,
+    limit,
+  );
 
-    const pages = result.data?.pages ?? [];
-    const firstPage = pages[0];
-    const allData = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
+  const infinite = useInfiniteQuery({
+    queryKey: [...queryKey, "infinite"],
+    queryFn: async ({ pageParam }) => {
+      if (pageParam) {
+        return client.getPositions.byUrl(pageParam);
+      }
+      return client.getPositions({
+        address: address!,
+        filter,
+        search,
+        history,
+        action,
+        sort,
+        limit,
+      });
+    },
+    getNextPageParam: (lastPage) => lastPage.links?.next ?? undefined,
+    getPreviousPageParam: (firstPage) => firstPage.links?.prev ?? undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: isInfinite && enabled && !!address,
+  });
 
-    return {
-      data: firstPage?.data ?? [],
-      links: firstPage?.links,
-      pages,
-      allData,
-      hasNextPage: result.hasNextPage ?? false,
-      hasPreviousPage: result.hasPreviousPage ?? false,
-      fetchNextPage: result.fetchNextPage,
-      fetchPreviousPage: result.fetchPreviousPage,
-      isFetchingNextPage: result.isFetchingNextPage,
-      isFetchingPreviousPage: result.isFetchingPreviousPage,
-      isLoading: result.isLoading,
-      isFetching: result.isFetching,
-      error: result.error,
-      refetch: result.refetch,
-    };
-  }
-
-  const result = useQuery({
-    queryKey: QueryKeys.positions(
-      address || "",
-      filter,
-      search,
-      history,
-      action,
-      sort,
-      limit,
-    ),
+  const single = useQuery({
+    queryKey,
     queryFn: () =>
       client.getPositions({
         address: address!,
@@ -143,15 +111,38 @@ export function usePositions(
         sort,
         limit,
       }),
-    enabled: enabled && !!address,
+    enabled: !isInfinite && enabled && !!address,
   });
 
+  const pages = infinite.data?.pages ?? [];
+  const firstPage = pages[0];
+  const allData = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
+
+  if (isInfinite) {
+    return {
+      data: firstPage?.data ?? [],
+      links: firstPage?.links,
+      pages,
+      allData,
+      hasNextPage: infinite.hasNextPage ?? false,
+      hasPreviousPage: infinite.hasPreviousPage ?? false,
+      fetchNextPage: infinite.fetchNextPage,
+      fetchPreviousPage: infinite.fetchPreviousPage,
+      isFetchingNextPage: infinite.isFetchingNextPage,
+      isFetchingPreviousPage: infinite.isFetchingPreviousPage,
+      isLoading: infinite.isLoading,
+      isFetching: infinite.isFetching,
+      error: infinite.error,
+      refetch: infinite.refetch,
+    };
+  }
+
   return {
-    data: result.data?.data ?? [],
-    links: result.data?.links,
-    isLoading: result.isLoading,
-    isFetching: result.isFetching,
-    error: result.error,
-    refetch: result.refetch,
+    data: single.data?.data ?? [],
+    links: single.data?.links,
+    isLoading: single.isLoading,
+    isFetching: single.isFetching,
+    error: single.error,
+    refetch: single.refetch,
   };
 }

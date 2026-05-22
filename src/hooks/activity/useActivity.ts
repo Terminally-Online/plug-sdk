@@ -55,47 +55,24 @@ export function useActivity(
 
   const isInfinite = "infinite" in options && options.infinite === true;
 
-  if (isInfinite) {
-    const result = useInfiniteQuery({
-      queryKey: [
-        ...QueryKeys.activity(address || "", filter, limit),
-        "infinite",
-      ],
-      queryFn: async ({ pageParam }) => {
-        if (pageParam) {
-          return client.getActivity.byUrl(pageParam);
-        }
-        return client.getActivity({
-          address: address!,
-          filter,
-          limit,
-        });
-      },
-      getNextPageParam: (lastPage) => lastPage.links?.next ?? undefined,
-      initialPageParam: undefined as string | undefined,
-      enabled: enabled && !!address,
-    });
+  const infinite = useInfiniteQuery({
+    queryKey: [...QueryKeys.activity(address || "", filter, limit), "infinite"],
+    queryFn: async ({ pageParam }) => {
+      if (pageParam) {
+        return client.getActivity.byUrl(pageParam);
+      }
+      return client.getActivity({
+        address: address!,
+        filter,
+        limit,
+      });
+    },
+    getNextPageParam: (lastPage) => lastPage.links?.next ?? undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: isInfinite && enabled && !!address,
+  });
 
-    const pages = result.data?.pages ?? [];
-    const firstPage = pages[0];
-    const allData = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
-
-    return {
-      data: firstPage?.data ?? [],
-      links: firstPage?.links,
-      pages,
-      allData,
-      hasNextPage: result.hasNextPage ?? false,
-      fetchNextPage: result.fetchNextPage,
-      isFetchingNextPage: result.isFetchingNextPage,
-      isLoading: result.isLoading,
-      isFetching: result.isFetching,
-      error: result.error,
-      refetch: result.refetch,
-    };
-  }
-
-  const result = useQuery({
+  const single = useQuery({
     queryKey: QueryKeys.activity(address || "", filter, limit),
     queryFn: () =>
       client.getActivity({
@@ -103,15 +80,35 @@ export function useActivity(
         filter,
         limit,
       }),
-    enabled: enabled && !!address,
+    enabled: !isInfinite && enabled && !!address,
   });
 
+  const pages = infinite.data?.pages ?? [];
+  const firstPage = pages[0];
+  const allData = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
+
+  if (isInfinite) {
+    return {
+      data: firstPage?.data ?? [],
+      links: firstPage?.links,
+      pages,
+      allData,
+      hasNextPage: infinite.hasNextPage ?? false,
+      fetchNextPage: infinite.fetchNextPage,
+      isFetchingNextPage: infinite.isFetchingNextPage,
+      isLoading: infinite.isLoading,
+      isFetching: infinite.isFetching,
+      error: infinite.error,
+      refetch: infinite.refetch,
+    };
+  }
+
   return {
-    data: result.data?.data ?? [],
-    links: result.data?.links,
-    isLoading: result.isLoading,
-    isFetching: result.isFetching,
-    error: result.error,
-    refetch: result.refetch,
+    data: single.data?.data ?? [],
+    links: single.data?.links,
+    isLoading: single.isLoading,
+    isFetching: single.isFetching,
+    error: single.error,
+    refetch: single.refetch,
   };
 }
