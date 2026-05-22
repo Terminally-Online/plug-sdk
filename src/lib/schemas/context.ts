@@ -3,14 +3,10 @@ import { z } from "zod";
 import { createResponseSchema } from "./response";
 import { ChainSchema } from "./chain";
 import { AddressParams } from "./address";
-import {
-  InputReferenceSchema,
-  InputTagsSchema,
-} from "../types/sentence";
+import { InputReferenceSchema, InputTagsSchema } from "../types/sentence";
 
 export const ContextStepAttributesSchema = z.object({
   "is:user_specific": z.boolean().optional(),
-  "is:searchable": z.boolean().optional(),
   "is:unlisted": z.boolean().optional(),
 });
 
