@@ -26,11 +26,33 @@ export const ActivityTransferSchema = z.object({
   to: ActivityAddressSchema,
 });
 
+export const ActivityApprovalTokenSchema = z.object({
+  address: z.string(),
+  name: z.string().optional(),
+  symbol: z.string().optional(),
+  icon: z.string().optional(),
+});
+
+export const ActivityApprovalSpenderSchema = z.object({
+  address: z.string(),
+  name: z.string().optional(),
+  icon: z.string().optional(),
+  protocol: z.string().optional(),
+});
+
+export const ActivityApprovalSchema = z.object({
+  token: ActivityApprovalTokenSchema,
+  owner: z.string(),
+  spender: ActivityApprovalSpenderSchema,
+  summary: z.string(),
+});
+
 export const ActivitySchema = z.object({
   tx_hash: z.string(),
   block_number: z.number(),
   chain_id: z.number(),
   type: z.string(),
+  name: z.string(),
   label: z.string(),
   sender: ActivityAddressSchema.optional(),
   recipient: ActivityAddressSchema.optional(),
@@ -40,6 +62,7 @@ export const ActivitySchema = z.object({
   balance_symbol: z.string().optional(),
   balance_direction: z.string().optional(),
   transfers: z.array(ActivityTransferSchema),
+  approvals: z.array(ActivityApprovalSchema).optional(),
 });
 
 export const GetActivityFilterSchema = z.object({
@@ -70,6 +93,7 @@ export const GetActivityResponseSchema = createResponseSchema(
 
 export type ActivityAddress = z.infer<typeof ActivityAddressSchema>;
 export type ActivityTransfer = z.infer<typeof ActivityTransferSchema>;
+export type ActivityApproval = z.infer<typeof ActivityApprovalSchema>;
 export type Activity = z.infer<typeof ActivitySchema>;
 export type GetActivityQueryParams = AddressParams &
   z.infer<typeof GetActivityQueryParamsSchema>;
