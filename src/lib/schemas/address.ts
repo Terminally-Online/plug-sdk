@@ -8,32 +8,102 @@ export const RecursiveStringMapSchema: z.ZodType<RecursiveStringMap> = z.lazy(
   () => z.record(z.string(), z.union([z.string(), RecursiveStringMapSchema])),
 );
 
+export type AttributeLeaf = { name: string; value: string; format?: string };
+export type AttributeSection = { key: string; leaves: AttributeLeaf[] };
+
+const splitLeafKey = (key: string): { name: string; format?: string } => {
+  const idx = key.lastIndexOf(":");
+  if (idx > 0 && idx < key.length - 1) {
+    return { name: key.slice(0, idx), format: key.slice(idx + 1) };
+  }
+  return { name: key };
+};
+
+const walk = (
+  attrs: RecursiveStringMap | undefined,
+  path: string[],
+): string | RecursiveStringMap | undefined => {
+  let current: string | RecursiveStringMap | undefined = attrs;
+  for (const key of path) {
+    if (typeof current !== "object" || current === null) return undefined;
+    current = current[key];
+  }
+  return current;
+};
+
+const findLeafKey = (
+  container: RecursiveStringMap,
+  name: string,
+): string | undefined => {
+  if (Object.prototype.hasOwnProperty.call(container, name)) return name;
+  for (const key of Object.keys(container)) {
+    if (splitLeafKey(key).name === name) return key;
+  }
+  return undefined;
+};
+
 export const attr = {
   get(
     attrs: RecursiveStringMap | undefined,
     ...path: string[]
   ): string | undefined {
-    let current: string | RecursiveStringMap | undefined = attrs;
-    for (const key of path) {
-      if (typeof current !== "object" || current === null) return undefined;
-      current = current[key];
+    if (path.length === 0) return undefined;
+    const parent = walk(attrs, path.slice(0, -1));
+    if (typeof parent !== "object" || parent === null) return undefined;
+    const key = findLeafKey(parent, path[path.length - 1]);
+    const value = key === undefined ? undefined : parent[key];
+    return typeof value === "string" ? value : undefined;
+  },
+
+  leaves(
+    attrs: RecursiveStringMap | undefined,
+    ...path: string[]
+  ): AttributeLeaf[] {
+    const current = walk(attrs, path);
+    if (typeof current !== "object" || current === null) return [];
+    const result: AttributeLeaf[] = [];
+    for (const [key, value] of Object.entries(current)) {
+      if (typeof value !== "string") continue;
+      const { name, format } = splitLeafKey(key);
+      result.push({ name, value, format });
     }
-    return typeof current === "string" ? current : undefined;
+    return result;
+  },
+
+  sections(
+    attrs: RecursiveStringMap | undefined,
+    ...path: string[]
+  ): AttributeSection[] {
+    const current = walk(attrs, path);
+    if (typeof current !== "object" || current === null) return [];
+    const result: AttributeSection[] = [];
+    for (const [key, value] of Object.entries(current)) {
+      if (typeof value !== "object" || value === null) continue;
+      const leaves = attr.leaves(value);
+      if (leaves.length > 0) result.push({ key, leaves });
+    }
+    return result;
   },
 
   entries(
     attrs: RecursiveStringMap | undefined,
     ...path: string[]
   ): [string, string][] {
-    let current: string | RecursiveStringMap | undefined = attrs;
-    for (const key of path) {
-      if (typeof current !== "object" || current === null) return [];
-      current = current[key];
-    }
-    if (typeof current !== "object" || current === null) return [];
-    return Object.entries(current).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    );
+    return attr
+      .leaves(attrs, ...path)
+      .map(({ name, value }): [string, string] => [name, value]);
+  },
+
+  formatOf(
+    attrs: RecursiveStringMap | undefined,
+    ...path: string[]
+  ): string | undefined {
+    if (path.length === 0) return undefined;
+    const parent = walk(attrs, path.slice(0, -1));
+    if (typeof parent !== "object" || parent === null) return undefined;
+    const key = findLeafKey(parent, path[path.length - 1]);
+    if (key === undefined || typeof parent[key] !== "string") return undefined;
+    return splitLeafKey(key).format;
   },
 };
 
@@ -116,7 +186,16 @@ export const PositionsFilterSchema = z.object({
       "Filter results to specific chains from the listed of supported options.",
     ),
   standard: z
-    .array(z.enum(["erc:20", "erc:721", "erc:1155", "erc:4626", "native", "position"]))
+    .array(
+      z.enum([
+        "erc:20",
+        "erc:721",
+        "erc:1155",
+        "erc:4626",
+        "native",
+        "position",
+      ]),
+    )
     .optional()
     .describe("Filter results to specific token standards."),
   protocol: z
