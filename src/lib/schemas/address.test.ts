@@ -215,11 +215,21 @@ describe("AddressPriceSchema", () => {
     ).toMatchObject({ open: "1", close: "1.5" });
   });
 
-  it("rejects a partial OHLC set", () => {
+  it("rejects a partial OHLC set with no change", () => {
     expect(
       AddressPriceSchema.safeParse({ open: "1", high: "2", low: "0.5" })
         .success,
     ).toBe(false);
+  });
+
+  it("accepts a change-only position quote", () => {
+    expect(AddressPriceSchema.parse({ change: "2.41" })).toEqual({
+      change: "2.41",
+    });
+  });
+
+  it("rejects an empty quote", () => {
+    expect(AddressPriceSchema.safeParse({}).success).toBe(false);
   });
 });
 

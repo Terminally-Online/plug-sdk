@@ -114,15 +114,33 @@ export const AddressBalanceSchema = z.object({
   value: z.string().optional(),
 });
 
-export const AddressPriceSchema = z.object({
-  open: z.string(),
-  high: z.string(),
-  low: z.string(),
-  close: z.string(),
-  change: z.string().optional(),
-  block: z.number().optional(),
-  timestamp: z.number().optional(),
-});
+// Price arrives in one of two legitimate wire shapes: a full OHLC candle for a
+// priced token/native, or a change-only quote for a position whose "price" is
+// the 24h move in net value (no candle exists for a synthetic position). OHLC
+// fields are therefore optional, but the refine still rejects a meaningless
+// partial — a payload must be either a complete candle or carry a change.
+export const AddressPriceSchema = z
+  .object({
+    open: z.string().optional(),
+    high: z.string().optional(),
+    low: z.string().optional(),
+    close: z.string().optional(),
+    change: z.string().optional(),
+    block: z.number().optional(),
+    timestamp: z.number().optional(),
+  })
+  .refine(
+    (price) =>
+      (price.open !== undefined &&
+        price.high !== undefined &&
+        price.low !== undefined &&
+        price.close !== undefined) ||
+      price.change !== undefined,
+    {
+      message:
+        "price must be a full OHLC candle or carry a change (position net-value quote)",
+    },
+  );
 
 export const AddressRelationshipSchema = z.object({
   chain_id: z.number().optional(),
