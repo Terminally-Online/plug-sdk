@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createResponseSchema } from "./response";
 import { ChainSchema } from "./chain";
 import { AddressParams } from "./address";
+import { ContextStepOptionsSchema } from "./option";
 import { InputReferenceSchema, InputTagsSchema } from "../types/sentence";
 
 export const ContextStepAttributesSchema = z.object({
@@ -10,45 +11,6 @@ export const ContextStepAttributesSchema = z.object({
   "is:unlisted": z.boolean().optional(),
 });
 
-const baseContextStepOptionSchema = z.object({
-  label: z.string().optional(),
-  part: z.string().optional(),
-  name: z.string().optional(),
-  value: z.string().optional(),
-  icons: z.array(z.string()).optional(),
-});
-
-export interface ContextStepOptionType {
-  label?: string;
-  part?: string;
-  name?: string;
-  value?: string;
-  icons?: string[];
-  info?: ContextStepOptionType;
-}
-
-export const ContextStepOptionSchema: z.ZodType<ContextStepOptionType> =
-  baseContextStepOptionSchema.extend({
-    info: z.lazy(() => ContextStepOptionSchema).optional(),
-  });
-export interface IContextStepOption {
-  [key: string]: ContextStepOptionType[] | IContextStepOption;
-}
-
-const contextStepOptionsSchema: z.ZodType<
-  ContextStepOptionType[] | IContextStepOption
-> = z.union([
-  z.array(ContextStepOptionSchema),
-  z.lazy(() => z.record(z.string(), contextStepOptionsSchema)),
-]);
-
-export const ContextStepOptionsSchema = z.record(
-  z.string(),
-  contextStepOptionsSchema,
-);
-
-// Recursive type structure for tuple/struct return types from Gusher API.
-// Type can be a simple string ("uint256") or an array of nested type elements for tuples.
 export interface IOutputTypeElement {
   name: string;
   type: string | IOutputTypeElement[];
@@ -143,14 +105,18 @@ export const ContextQueryParamsSchema = z.object({
     .describe(
       "Search within the returned options by input index of an action sentence. This is helpful when letting users refine the options shown for a specific action input such as tokens, vaults or liquidity pools.",
     ),
+  intent: z
+    .enum(["imperative", "declarative"])
+    .optional()
+    .describe(
+      "Whether an action's options are scoped to the caller's holdings (imperative — acting now) or the full universe of valid targets (declarative — composing a flow). Defaults to declarative.",
+    ),
 });
 export const ContextResponseSchema = createResponseSchema(ContextSchema);
 
 export type ContextActionAttributes = z.infer<
   typeof ContextStepAttributesSchema
 >;
-export type ContextActionOptions = z.infer<typeof ContextStepOptionsSchema>;
-export type ContextActionOption = z.infer<typeof ContextStepOptionSchema>;
 export type ContextActionOutputInfo = z.infer<
   typeof ContextStepOutputInfoSchema
 >;

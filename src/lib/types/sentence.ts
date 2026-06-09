@@ -90,6 +90,48 @@ export const InputTagSchema = z.object({
 
 export const InputTagsSchema = z.array(InputTagSchema);
 
+// Tag vocabulary — the cross-repo contract mirroring gusher's internal/tags. Import
+// these instead of hardcoding the strings so a consumer never re-derives what an
+// input's tags mean.
+
+// TagKind is an input tag's `kind`.
+export const TagKind = {
+  Decimal: "decimal",
+  Standard: "standard",
+  Constraint: "constraint",
+  Format: "format",
+  Coerce: "coerce",
+  Sentinel: "sentinel",
+} as const;
+export type TagKind = (typeof TagKind)[keyof typeof TagKind];
+
+// Standard is the `value` of a TagKind.Standard tag — the semantic type an input wants.
+export const Standard = {
+  Token: "token",
+  Market: "market",
+  Wallet: "wallet",
+  Variable: "variable",
+  Selector: "selector",
+} as const;
+export type Standard = (typeof Standard)[keyof typeof Standard];
+
+// WalletVariant qualifies a Standard.Wallet input — whose address fills the slot.
+// `self` is the caller (resolved from the session, hidden); `external` is an
+// address the caller provides (a searchable field). A bare wallet tag with no
+// qualifier means external — the slot must never silently resolve to the caller.
+export const WalletVariant = {
+  Self: "self",
+  External: "external",
+} as const;
+export type WalletVariant = (typeof WalletVariant)[keyof typeof WalletVariant];
+
+// Sentinel is the `value` of a TagKind.Sentinel tag — a one-click literal an amount
+// input can offer (Max today).
+export const Sentinel = {
+  Max: "max",
+} as const;
+export type Sentinel = (typeof Sentinel)[keyof typeof Sentinel];
+
 export const InputReferenceSchema = z.object({
   name: z.string().optional(),
   type: InputTypeSchema.optional(),

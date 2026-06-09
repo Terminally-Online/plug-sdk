@@ -79,6 +79,7 @@ export const QueryKeys = {
     address: string,
     filter?: Record<string, unknown>,
     search?: Record<string, unknown>,
+    intent?: string,
   ) =>
     [
       ...QueryKeys.all,
@@ -86,6 +87,7 @@ export const QueryKeys = {
       address,
       stableStringify(filter),
       stableStringify(search),
+      intent ?? "",
     ] as const,
 
   activity: (

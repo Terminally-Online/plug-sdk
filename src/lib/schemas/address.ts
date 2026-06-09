@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ActionSchema } from "./action";
 import { createResponseSchema } from "./response";
 
 export type RecursiveStringMap = { [key: string]: string | RecursiveStringMap };
@@ -185,6 +186,7 @@ export const AddressSchema = z.object({
     .optional(),
   tokens: z.array(AddressRelationshipSchema).optional(),
   visibility: z.string().optional(),
+  actions: z.array(ActionSchema).optional(),
 });
 
 export const AddressParamsSchema = z.object({
