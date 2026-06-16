@@ -8,9 +8,11 @@ import {
   GetActivityResponse,
 } from "../../lib/schemas/activity";
 import { usePlugContext } from "../../provider";
+import { useStream } from "../stream/useStream";
 
 export type UseActivityOptions = Omit<GetActivityQueryParams, "address"> & {
   enabled?: boolean;
+  stream?: boolean;
 };
 
 export type UseActivityInfiniteOptions = UseActivityOptions & {
@@ -51,7 +53,7 @@ export function useActivity(
   options: UseActivityOptions | UseActivityInfiniteOptions = {},
 ): UseActivityBaseResult | UseActivityInfiniteResult {
   const { client } = usePlugContext();
-  const { filter, limit, enabled = true } = options;
+  const { filter, limit, enabled = true, stream = false } = options;
 
   const isInfinite = "infinite" in options && options.infinite === true;
 
@@ -82,6 +84,15 @@ export function useActivity(
       }),
     enabled: !isInfinite && enabled && !!address,
   });
+
+  useStream(
+    (params, opts) => client.getActivity(params, opts),
+    address ? { address, filter, limit } : undefined,
+    isInfinite
+      ? [...QueryKeys.activity(address || "", filter, limit), "infinite"]
+      : QueryKeys.activity(address || "", filter, limit),
+    { enabled: enabled && stream && !!address, infinite: isInfinite },
+  );
 
   const pages = infinite.data?.pages ?? [];
   const firstPage = pages[0];

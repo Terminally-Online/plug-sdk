@@ -9,9 +9,11 @@ import {
   Address,
 } from "../../lib/schemas/address";
 import { usePlugContext } from "../../provider";
+import { useStream } from "../stream/useStream";
 
 export type UsePositionsOptions = Omit<PositionsQueryParams, "address"> & {
   enabled?: boolean;
+  stream?: boolean;
 };
 
 export type UsePositionsInfiniteOptions = UsePositionsOptions & {
@@ -63,6 +65,7 @@ export function usePositions(
     sort,
     limit,
     enabled = true,
+    stream = false,
   } = options;
 
   const isInfinite = "infinite" in options && options.infinite === true;
@@ -113,6 +116,15 @@ export function usePositions(
       }),
     enabled: !isInfinite && enabled && !!address,
   });
+
+  useStream(
+    (params, opts) => client.getPositions(params, opts),
+    address
+      ? { address, filter, search, history, action, sort, limit }
+      : undefined,
+    isInfinite ? [...queryKey, "infinite"] : queryKey,
+    { enabled: enabled && stream && !!address, infinite: isInfinite },
+  );
 
   const pages = infinite.data?.pages ?? [];
   const firstPage = pages[0];

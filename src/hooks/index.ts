@@ -13,4 +13,6 @@ export * from "./transaction/useCreateTransaction";
 
 export * from "./cdn/useColor";
 
+export * from "./stream/useStream";
+
 export * from "./usePlug";

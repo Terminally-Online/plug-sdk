@@ -32,11 +32,11 @@ import {
   GetTransactionsQueryParams,
   GetTransactionsResponseSchema,
 } from "./lib/schemas/transaction";
-import {
-  SeriesQueryParams,
-  SeriesResponseSchema,
-} from "./lib/schemas/series";
+import { SeriesQueryParams, SeriesResponseSchema } from "./lib/schemas/series";
 import { ColorQueryParams, ColorResponseSchema } from "./lib/schemas/cdn";
+import { StreamManager, type StreamListener } from "./client/manager";
+import { StreamConnection } from "./client/stream";
+import { applyJsonPatch } from "./client/patch";
 
 type EndpointParams = Record<string, any>;
 type EndpointOptions<T> = {
@@ -96,6 +96,7 @@ export interface AuthSessionResponse {
 
 export class PlugClient {
   private config: ResolvedPlugSDKConfig;
+  private streamManager = new StreamManager();
 
   readonly endpoints: EndpointMeta[] = [];
 
@@ -300,9 +301,18 @@ export class PlugClient {
       ): () => void;
       function endpoint(
         params: TParams,
-        _?: EndpointOptions<z.infer<TSchema>>,
+        options?: EndpointOptions<z.infer<TSchema>>,
       ): Promise<z.infer<TSchema>> | (() => void) {
-        return self.requestEndpoint(path, params, responseSchema, method, scope);
+        if (options) {
+          return self.openStream(path, params, responseSchema, scope, options);
+        }
+        return self.requestEndpoint(
+          path,
+          params,
+          responseSchema,
+          method,
+          scope,
+        );
       }
 
       return Object.assign(endpoint, {
@@ -317,6 +327,61 @@ export class PlugClient {
     };
   }
 
+  private resolveUrl<TParams extends EndpointParams>(
+    path: string,
+    params: TParams,
+    scope: EndpointScope,
+  ): string {
+    const { address, url: full, ...query } = params;
+    const processed = buildQueryParams(query);
+    const scopedPath = scope === "root" ? path : `/address/${address}${path}`;
+    return full
+      ? `${
+          full.startsWith("http") ? full : `${this.config.baseUrl}${full}`
+        }${path}`
+      : this.createUrl(scopedPath, processed);
+  }
+
+  private openStream<
+    TParams extends EndpointParams,
+    TSchema extends z.ZodSchema,
+  >(
+    path: string,
+    params: TParams,
+    responseSchema: TSchema,
+    scope: EndpointScope,
+    options: EndpointOptions<z.infer<TSchema>>,
+  ): () => void {
+    const url = this.resolveUrl(path, params, scope);
+    const validate = this.createValidator(responseSchema);
+
+    let current: z.infer<TSchema>;
+    const listener: StreamListener = {
+      onSnapshot: (data) => {
+        current = data as z.infer<TSchema>;
+        options.onData(current);
+      },
+      onPatch: (ops) => {
+        current = applyJsonPatch(current, ops);
+        options.onData(current);
+      },
+      onError: (error) => options.onError?.(error),
+    };
+
+    return this.streamManager.subscribe(
+      url,
+      (callbacks) =>
+        new StreamConnection({
+          url,
+          getAuthHeaders: () => this.getAuthHeaders(),
+          onTokenExpired: this.config.auth?.onTokenExpired,
+          validateSnapshot: (data) => validate(data, url),
+          ...callbacks,
+        }),
+      listener,
+    );
+  }
+
   private async requestEndpoint<
     TParams extends EndpointParams,
     TSchema extends z.ZodSchema,
@@ -328,15 +393,7 @@ export class PlugClient {
     scope: EndpointScope = "address",
   ): Promise<z.infer<TSchema>> {
     try {
-      const { address, url: full, ...query } = params;
-      const processed = buildQueryParams(query);
-      const scopedPath =
-        scope === "root" ? path : `/address/${address}${path}`;
-      const url = full
-        ? `${
-            full.startsWith("http") ? full : `${this.config.baseUrl}${full}`
-          }${path}`
-        : this.createUrl(scopedPath, processed);
+      const url = this.resolveUrl(path, params, scope);
       const data = await this.request<unknown>(url, { method });
       const validated = this.createValidator(responseSchema)(data, url);
 

@@ -9,9 +9,11 @@ import {
   SeriesEntry,
 } from "../../lib/schemas/series";
 import { usePlugContext } from "../../provider";
+import { useStream } from "../stream/useStream";
 
 export type UseSeriesOptions = Omit<SeriesQueryParams, "address"> & {
   enabled?: boolean;
+  stream?: boolean;
 };
 
 export type UseSeriesInfiniteOptions = UseSeriesOptions & {
@@ -56,7 +58,7 @@ export function useSeries(
   options: UseSeriesOptions | UseSeriesInfiniteOptions = {},
 ): UseSeriesBaseResult | UseSeriesInfiniteResult {
   const { client } = usePlugContext();
-  const { filter, time, sort, limit, enabled = true } = options;
+  const { filter, time, sort, limit, enabled = true, stream = false } = options;
 
   const isInfinite = "infinite" in options && options.infinite === true;
   const drain = "drain" in options && options.drain === true;
@@ -96,6 +98,15 @@ export function useSeries(
       }),
     enabled: !isInfinite && enabled && !!address,
   });
+
+  useStream(
+    (params, opts) => client.getSeries(params, opts),
+    address ? { address, filter, time, sort, limit } : undefined,
+    isInfinite
+      ? [...QueryKeys.series(address || "", filter, time, sort, limit), "infinite"]
+      : QueryKeys.series(address || "", filter, time, sort, limit),
+    { enabled: enabled && stream && !!address, infinite: isInfinite },
+  );
 
   useEffect(() => {
     if (

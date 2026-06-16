@@ -7,6 +7,7 @@ import {
 
 import { usePlugContext } from "../../provider";
 import { QueryKeys } from "../../config";
+import { useStream } from "../stream/useStream";
 
 import {
   Context,
@@ -20,6 +21,7 @@ import {
 
 export type UseContextOptions = Omit<ContextQueryParams, "address"> & {
   enabled?: boolean;
+  stream?: boolean;
 };
 
 type UseContextBase = {
@@ -77,15 +79,24 @@ export function useContext(
   options: UseContextOptions = {},
 ): UseContextActionResult | UseContextProtocolResult | UseContextFullResult {
   const { client } = usePlugContext();
-  const { filter, search, intent, enabled = true } = options;
+  const { filter, search, intent, enabled = true, stream = false } = options;
+
+  const queryKey = QueryKeys.context(address || "", filter, search, intent);
 
   const result = useQuery({
-    queryKey: QueryKeys.context(address || "", filter, search, intent),
+    queryKey,
     queryFn: () =>
       client.getContext({ address: address!, filter, search, intent }),
     enabled: enabled && !!address,
     placeholderData: search ? keepPreviousData : undefined,
   });
+
+  useStream(
+    (params, opts) => client.getContext(params, opts),
+    address ? { address, filter, search, intent } : undefined,
+    queryKey,
+    { enabled: enabled && stream && !!address },
+  );
 
   const raw = result.data?.data ?? undefined;
   const base: UseContextBase = {
