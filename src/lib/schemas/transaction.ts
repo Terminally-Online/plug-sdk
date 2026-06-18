@@ -51,8 +51,52 @@ export const CreateTransactionInputSchema = z.object({
 export const CreateTransactionQueryParamsSchema = z.object({
   input: CreateTransactionInputSchema,
 });
-export const CreateTransactionResponseSchema =
-  createResponseSchema(TransactionSchema);
+
+export const RelaySwapRegionSchema = z.object({
+  token_in: z.string(),
+  token_out: z.string(),
+  amount_in: z.number(),
+  executor_slot: z.number(),
+  route_slot: z.number(),
+});
+
+export const TypedDataSchema = z.object({
+  types: z.record(
+    z.string(),
+    z.array(z.object({ name: z.string(), type: z.string() })),
+  ),
+  primaryType: z.string(),
+  domain: z.record(z.string(), z.any()),
+  message: z.record(z.string(), z.any()),
+});
+
+export const RelayPayloadSchema = z.object({
+  typed_data: TypedDataSchema,
+  plugs: z.array(z.string()),
+  state: z.array(z.string()),
+  manifest: z.array(RelaySwapRegionSchema),
+});
+
+export const CreateTransactionDataSchema = TransactionSchema.extend({
+  outputs: z.array(z.any()).nullish(),
+  relay: RelayPayloadSchema.nullish(),
+});
+export const CreateTransactionResponseSchema = createResponseSchema(
+  CreateTransactionDataSchema,
+);
+
+export const SubmitTransactionInputSchema = z.object({
+  chain_id: z.number(),
+  owner: z.string(),
+  salt: z.string().optional(),
+  plugs: z.array(z.string()),
+  state: z.array(z.string()),
+  signature: z.string(),
+  manifest: z.array(RelaySwapRegionSchema),
+});
+export const SubmitTransactionResponseSchema = z.object({
+  transaction_hash: z.string(),
+});
 
 export type TransactionInput = z.infer<typeof TransactionInputSchema>;
 export type TransactionStep = z.infer<typeof TransactionStepSchema>;
@@ -89,6 +133,17 @@ export const CompileTransactionQueryParamsSchema = z.object({
 export const CompileTransactionResponseSchema = createResponseSchema(
   z.array(z.record(z.string(), z.array(CoilOptionSchema))),
 );
+
+export type RelaySwapRegion = z.infer<typeof RelaySwapRegionSchema>;
+export type TypedData = z.infer<typeof TypedDataSchema>;
+export type RelayPayload = z.infer<typeof RelayPayloadSchema>;
+export type SubmitTransactionInput = z.infer<
+  typeof SubmitTransactionInputSchema
+>;
+export type SubmitTransactionParams = AddressParams & SubmitTransactionInput;
+export type SubmitTransactionResponse = z.infer<
+  typeof SubmitTransactionResponseSchema
+>;
 
 export type CoilOption = z.infer<typeof CoilOptionSchema>;
 export type CompileTransactionQueryParams = z.infer<

@@ -80,12 +80,33 @@ export const QueryKeys = {
     filter?: Record<string, unknown>,
     search?: Record<string, unknown>,
     intent?: string,
+    draft?: Record<string, unknown>,
   ) =>
     [
       ...QueryKeys.all,
       "context",
       address,
       stableStringify(filter),
+      stableStringify(search),
+      intent ?? "",
+      stableStringify(draft),
+    ] as const,
+
+  contextOptions: (
+    address: string,
+    filter?: Record<string, unknown>,
+    input?: number,
+    selections?: Record<string, unknown>,
+    search?: Record<string, unknown>,
+    intent?: string,
+  ) =>
+    [
+      ...QueryKeys.all,
+      "context-options",
+      address,
+      stableStringify(filter),
+      input ?? -1,
+      stableStringify(selections),
       stableStringify(search),
       intent ?? "",
     ] as const,

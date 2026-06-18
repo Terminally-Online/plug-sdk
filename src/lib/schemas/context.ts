@@ -46,6 +46,17 @@ export const ContextStepSentenceSchema = z.object({
   outputs: z.array(ContextStepOutputInfoSchema).optional(),
 });
 
+// Meta is request-scoped relevance the server projects over the draft request — a swap
+// quote, a live max — keyed by facet name. The map is intentionally open: the frame
+// renders the facets it recognizes and ignores the rest, so a new facet ships without a
+// schema lockstep. Facets exist at two scopes: the action as a whole, and individual
+// inputs (keyed by input index).
+export const MetaFacetsSchema = z.record(z.string(), z.unknown());
+export const MetaSchema = z.object({
+  action: MetaFacetsSchema.optional(),
+  inputs: z.record(z.string(), MetaFacetsSchema).optional(),
+});
+
 export const ContextStepSchema = z.object({
   type: z.string(),
   sentence: ContextStepSentenceSchema,
@@ -55,6 +66,7 @@ export const ContextStepSchema = z.object({
   attributes: ContextStepAttributesSchema.optional(),
   feeds: z.array(z.string()).optional(),
   options: ContextStepOptionsSchema.optional(),
+  meta: MetaSchema.optional(),
 });
 
 export const ContextActionSchema = ContextStepSchema.extend({
@@ -111,6 +123,30 @@ export const ContextQueryParamsSchema = z.object({
     .describe(
       "Whether an action's options are scoped to the caller's holdings (imperative — acting now) or the full universe of valid targets (declarative — composing a flow). Defaults to declarative.",
     ),
+  input: z
+    .number()
+    .optional()
+    .describe(
+      "The focused input index whose option list is being paginated. Paired with `limit`; the response windows only this input's list.",
+    ),
+  selections: z
+    .record(z.string())
+    .optional()
+    .describe(
+      "Values already chosen for the focused input's dependency inputs, keyed by input index, so a dependent list (e.g. a market that hangs off a chosen token) windows against its parent.",
+    ),
+  draft: z
+    .record(z.string())
+    .optional()
+    .describe(
+      "The full partial assignment — every input the user has filled so far, keyed by input index — so the server can project request-scoped meta (a swap quote, a live max) over the complete in-flight request.",
+    ),
+  limit: z
+    .object({ count: z.number(), offset: z.number().optional() })
+    .optional()
+    .describe(
+      "Page window for the focused input's option list. `count` is the page size; `offset` skips leading entries. Follow `links.next` to advance.",
+    ),
 });
 export const ContextResponseSchema = createResponseSchema(ContextSchema);
 
@@ -128,3 +164,5 @@ export type ContextQueryParams = AddressParams &
   z.infer<typeof ContextQueryParamsSchema>;
 export type ContextResponse = z.infer<typeof ContextResponseSchema>;
 export type ContextAction = z.infer<typeof ContextActionSchema>;
+export type Meta = z.infer<typeof MetaSchema>;
+export type MetaFacets = z.infer<typeof MetaFacetsSchema>;

@@ -31,6 +31,9 @@ import {
   CreateTransactionResponseSchema,
   GetTransactionsQueryParams,
   GetTransactionsResponseSchema,
+  SubmitTransactionParams,
+  SubmitTransactionResponse,
+  SubmitTransactionResponseSchema,
 } from "./lib/schemas/transaction";
 import { SeriesQueryParams, SeriesResponseSchema } from "./lib/schemas/series";
 import { ColorQueryParams, ColorResponseSchema } from "./lib/schemas/cdn";
@@ -493,6 +496,20 @@ export class PlugClient {
         "Compile an action sequence into coil options and output manifests.",
     },
   )(CompileTransactionResponseSchema);
+
+  readonly submitTransaction = async ({
+    address,
+    ...input
+  }: SubmitTransactionParams): Promise<SubmitTransactionResponse> => {
+    const data = await this.request<unknown>(
+      `/address/${address}/transaction/`,
+      { method: "PUT", body: JSON.stringify(input) },
+    );
+    return this.createValidator(SubmitTransactionResponseSchema)(
+      data,
+      `/address/${address}/transaction/`,
+    );
+  };
 
   readonly getSeries = this.endpoint<SeriesQueryParams>("/history", "GET", {
     summary: "Time-series historical data for an address.",

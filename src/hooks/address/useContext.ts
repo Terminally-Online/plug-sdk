@@ -79,21 +79,21 @@ export function useContext(
   options: UseContextOptions = {},
 ): UseContextActionResult | UseContextProtocolResult | UseContextFullResult {
   const { client } = usePlugContext();
-  const { filter, search, intent, enabled = true, stream = false } = options;
+  const { filter, search, intent, draft, enabled = true, stream = false } = options;
 
-  const queryKey = QueryKeys.context(address || "", filter, search, intent);
+  const queryKey = QueryKeys.context(address || "", filter, search, intent, draft);
 
   const result = useQuery({
     queryKey,
     queryFn: () =>
-      client.getContext({ address: address!, filter, search, intent }),
+      client.getContext({ address: address!, filter, search, intent, draft }),
     enabled: enabled && !!address,
-    placeholderData: search ? keepPreviousData : undefined,
+    placeholderData: search || draft ? keepPreviousData : undefined,
   });
 
   useStream(
     (params, opts) => client.getContext(params, opts),
-    address ? { address, filter, search, intent } : undefined,
+    address ? { address, filter, search, intent, draft } : undefined,
     queryKey,
     { enabled: enabled && stream && !!address },
   );
