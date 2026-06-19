@@ -17,6 +17,8 @@ export type UseStreamOptions = {
   infinite?: boolean;
 };
 
+const STREAMING_ENABLED = false;
+
 type InfinitePages = { pages: unknown[]; pageParams: unknown[] };
 
 export function useStream<TParams>(
@@ -38,7 +40,7 @@ export function useStream<TParams>(
   const keyString = JSON.stringify(queryKey);
 
   useEffect(() => {
-    if (!enabled || paramsRef.current === undefined) return;
+    if (!STREAMING_ENABLED || !enabled || paramsRef.current === undefined) return;
 
     let close: (() => void) | undefined;
     let paused = false;
