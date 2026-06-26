@@ -94,80 +94,50 @@ describe("resolveInputOptions", () => {
 });
 
 describe("resolveInputInfo", () => {
-  // An Aave Supply sentence: token (index 1) and market (index 2, keyed by token). The
-  // per-(token, market) facts ship ONCE under the market options — the asset option below
-  // carries identity only. Nothing market-specific lives in the resolver; the dimension is
-  // found through `requires`.
-  const inputs = [
-    { requires: undefined }, // 0 amount
-    { requires: undefined }, // 1 token
-    { requires: [1] }, // 2 market — keyed by token value
-  ];
-
+  // A row draws ONLY its own facets — the universal pick signal (price, 24h change,
+  // holdings). It never borrows a dependent dimension's action-specific data; the
+  // action resolves a market's rate/LTV/cap on-chain at runtime, not the picker.
   const usdc: ContextActionOption = {
     value: "0xusdc",
     label: "USDC",
     icons: ["usdc.png"],
-    // The asset's own top-line figure (e.g. suppliable balance in USD), server-set.
-    info: { value: "$1,200" },
+    facets: [
+      { kind: "price", value: "$1.00" },
+      { kind: "change", value: "0.00%" },
+    ],
   };
 
-  const options = {
-    "1": [usdc],
-    "2": {
-      "0xusdc": [
-        {
-          value: "0xMarketA",
-          icons: ["marketA.png"],
-          info: { icons: ["usdc.png"], info: { value: "3.1%", label: "$60" } },
-        },
-        {
-          value: "0xMarketB",
-          icons: ["marketB.png"],
-          info: { icons: ["usdc.png"], info: { value: "4.2%", label: "$40" } },
-        },
-      ],
-    },
-  };
-
-  it("folds the dimension to the subline (rate range), keeping the asset's top-line balance", () => {
-    const summary = resolveInputInfo(usdc, 1, inputs, options, [], []);
-    expect(summary?.value).toBe("$1,200"); // top line: the asset's own balance
-    expect(summary?.icons).toEqual(["marketA.png", "marketB.png"]);
-    expect(summary?.info?.value).toBe("3.1% - 4.2%"); // subline: the rate range
+  it("returns the option's own facets, untouched", () => {
+    const info = resolveInputInfo(usdc);
+    expect(info.facets).toEqual(usdc.facets);
+    expect(info.facets.some((f) => f.kind === "rate")).toBe(false);
   });
 
-  it("picks the one market's rate as the subline, balance still on top, when resolved", () => {
-    const values = [undefined, undefined, { value: "0xMarketB" }];
-    const picked = resolveInputInfo(usdc, 1, inputs, options, values, []);
-    expect(picked?.value).toBe("$1,200");
-    expect(picked?.icons).toEqual(["marketB.png"]);
-    expect(picked?.info?.value).toBe("4.2%");
+  it("returns an empty facet list for an option with no own facets (unpriced token)", () => {
+    const unpriced: ContextActionOption = { value: "0xpt", label: "PT", icons: ["pt.png"] };
+    expect(resolveInputInfo(unpriced).facets).toEqual([]);
   });
 
-  it("returns the option's own info when no input depends on it (non-dimensional)", () => {
-    const recipient: ContextActionOption = {
-      value: "0xabc",
-      info: { value: "ENS", label: "vitalik.eth" },
+  it("surfaces an icon group beyond the avatar on the subline (E-Mode member assets)", () => {
+    const category: ContextActionOption = {
+      value: "0xcat",
+      icons: ["category.png", "a.png", "b.png"],
+      facets: [],
     };
-    // index 0 — nothing in `inputs` requires it.
-    expect(resolveInputInfo(recipient, 0, inputs, options, [], [])).toBe(
-      recipient.info,
-    );
+    expect(resolveInputInfo(category).icons).toEqual(["a.png", "b.png"]);
   });
 
-  it("falls back to the summary when the resolved dimension has no entry", () => {
-    const values = [undefined, undefined, { value: "0xUnknownMarket" }];
-    const summary = resolveInputInfo(usdc, 1, inputs, options, values, []);
-    expect(summary?.icons).toEqual(["marketA.png", "marketB.png"]);
-    expect(summary?.info?.value).toBe("3.1% - 4.2%");
+  it("surfaces a two-icon option's second icon on the subline (a market's asset)", () => {
+    const market: ContextActionOption = {
+      value: "0xmarket",
+      label: "WETH",
+      icons: ["market.png", "weth.png"],
+      facets: [],
+    };
+    expect(resolveInputInfo(market).icons).toEqual(["weth.png"]);
   });
 
-  it("dereferences a tag-ref dimension value before picking — same rule as options", () => {
-    const values = [undefined, undefined, { value: "<~{0.0}" }];
-    const actions = [{ values: [{ value: "0xMarketA" }] }];
-    const picked = resolveInputInfo(usdc, 1, inputs, options, values, actions);
-    expect(picked?.icons).toEqual(["marketA.png"]);
-    expect(picked?.info?.value).toBe("3.1%");
+  it("adds no subline icon-row for a single-icon option", () => {
+    expect(resolveInputInfo(usdc).icons).toBeUndefined();
   });
 });

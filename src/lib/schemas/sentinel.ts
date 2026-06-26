@@ -1,11 +1,9 @@
 import { InputReference, TagKind } from "../types/sentence";
 import { ContextActionOption } from "./option";
 
-// A sentinel is just an option (gusher hangs `Option.Sentinel *Option` off the
-// option that resolves the reference), so it flows through the same
-// `ContextActionOption` model — no parallel type. `label` names it (and renders the
-// chip), `value` is the exact base-units literal, and `info.value` carries the
-// decimals to scale it. Nothing is special-cased to "max".
+// A "max" affordance fills an amount field with a referenced token option's full
+// held balance. The token option carries the ceiling first-class — `max` is the exact
+// base-units literal, `decimals` scales it — so there's no parallel sentinel type.
 
 // formatBaseUnits renders an integer base-units string as a human decimal, scaled
 // by `decimals` with trailing fractional zeros trimmed. Dependency-free so the SDK
@@ -23,27 +21,23 @@ const formatBaseUnits = (value: string, decimals: number): string => {
   return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
 };
 
-// sentinelAmount is the human value a sentinel option fills into its field. The
-// value is exact base units (the displayed balance is rounded, so the client scales
-// to full precision); when the server pairs a decimals scalar in `info.value` it is
-// applied, otherwise the value is already display-ready. undefined when there is no
-// usable value to fill.
+// sentinelAmount is the human max a token option fills into a referenced amount
+// field. `max` is exact base units (the displayed balance is rounded, so the client
+// scales to full precision), applied through `decimals`. undefined when the option
+// carries no max.
 export const sentinelAmount = (
-  sentinel: ContextActionOption,
+  option: ContextActionOption,
 ): string | undefined => {
-  if (sentinel.value === undefined) return undefined;
-  const decimals = sentinel.info?.value;
-  if (decimals === undefined) return sentinel.value;
-  const scale = Number(decimals);
-  if (!Number.isFinite(scale)) return undefined;
-  return formatBaseUnits(sentinel.value, scale);
+  if (!option.max) return undefined;
+  if (option.decimals === undefined) return option.max;
+  if (!Number.isFinite(option.decimals)) return undefined;
+  return formatBaseUnits(option.max, option.decimals);
 };
 
-// readInputSentinels resolves the sentinel option an input offers per sentinel tag.
-// Each of the input's sentinel-kind tags points (via `reference`) at an upstream
-// input; `optionFor` supplies that input's currently chosen option, which carries
-// the server-computed sentinel. Returns the sentinel options that carry a value —
-// empty when none apply.
+// readInputSentinels resolves the token options an input's sentinel tags reference,
+// keeping those that carry a max. Each sentinel-kind tag points (via `reference`) at
+// an upstream input; `optionFor` supplies that input's chosen option (the token,
+// which now carries `max`/`decimals` first-class). Empty when none apply.
 export const readInputSentinels = (
   input: InputReference | undefined,
   optionFor: (referenceIndex: number) => ContextActionOption | undefined,
@@ -51,15 +45,13 @@ export const readInputSentinels = (
   const tags = input?.tags;
   if (!tags?.length) return [];
 
-  const sentinels: ContextActionOption[] = [];
+  const options: ContextActionOption[] = [];
   for (const tag of tags) {
     if (tag.kind !== TagKind.Sentinel) continue;
     if (typeof tag.reference !== "number") continue;
 
-    const sentinel = optionFor(tag.reference)?.sentinel;
-    if (sentinel?.value === undefined) continue;
-
-    sentinels.push(sentinel);
+    const option = optionFor(tag.reference);
+    if (option?.max) options.push(option);
   }
-  return sentinels;
+  return options;
 };

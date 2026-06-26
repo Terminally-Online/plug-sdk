@@ -81,6 +81,7 @@ export const QueryKeys = {
     search?: Record<string, unknown>,
     intent?: string,
     draft?: Record<string, unknown>,
+    selections?: Record<string, unknown>,
   ) =>
     [
       ...QueryKeys.all,
@@ -90,6 +91,7 @@ export const QueryKeys = {
       stableStringify(search),
       intent ?? "",
       stableStringify(draft),
+      stableStringify(selections),
     ] as const,
 
   contextOptions: (

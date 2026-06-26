@@ -1,17 +1,32 @@
 import { z } from "zod";
 
 // The option model the context endpoint returns for an action's inputs — mirrors
-// gusher's `models.Option`. `info` and `sentinel` are themselves options (nested
-// display metadata and a one-click literal). An input's options are either a flat
-// list or a tree keyed by an upstream input's value (resolved by resolveInputOptions).
+// gusher's `models.Option`. Identity (label/name/value/icons) and intrinsic token
+// data (`decimals`) are present in both intents so the client can always render and
+// scale an amount. `max` is the actionable ceiling a "max" affordance fills (base
+// units, scaled by `decimals`). Contextual display rides in `facets`, each
+// self-describing by `kind` so the client renders by what it is, not by nesting.
+// An input's options are either a flat list or a tree keyed by an upstream input's
+// value (resolved by resolveInputOptions).
 
-const baseOptionSchema = z.object({
-  label: z.string().optional(),
-  part: z.string().optional(),
-  name: z.string().optional(),
-  value: z.string().optional(),
-  icons: z.array(z.string()).optional(),
-});
+// Facet kinds, mirroring gusher's models constants. The client renders by kind and
+// ignores kinds it doesn't recognize.
+export const Facet = {
+  Value: "value",
+  Balance: "balance",
+  Price: "price",
+  Change: "change",
+  Rate: "rate",
+  Status: "status",
+  Liquidity: "liquidity",
+  TokenId: "token_id",
+} as const;
+export type FacetKind = (typeof Facet)[keyof typeof Facet];
+
+export interface ContextStepFacet {
+  kind: string;
+  value: string;
+}
 
 export interface ContextStepOptionType {
   label?: string;
@@ -19,18 +34,29 @@ export interface ContextStepOptionType {
   name?: string;
   value?: string;
   icons?: string[];
-  info?: ContextStepOptionType;
-  // A server-computed, context-scoped literal the user can one-click (e.g. "max").
-  // Itself an option: `label` names it, `value` is the exact base-units literal, and
-  // `info.value` carries the decimals to scale it (see sentinel.ts).
-  sentinel?: ContextStepOptionType;
+  decimals?: number;
+  max?: string;
+  facets?: ContextStepFacet[];
 }
 
-export const ContextStepOptionSchema: z.ZodType<ContextStepOptionType> =
-  baseOptionSchema.extend({
-    info: z.lazy(() => ContextStepOptionSchema).optional(),
-    sentinel: z.lazy(() => ContextStepOptionSchema).optional(),
-  });
+const facetSchema = z.object({ kind: z.string(), value: z.string() });
+
+export const ContextStepOptionSchema: z.ZodType<ContextStepOptionType> = z.object({
+  label: z.string().optional(),
+  part: z.string().optional(),
+  name: z.string().optional(),
+  value: z.string().optional(),
+  icons: z.array(z.string()).optional(),
+  decimals: z.number().optional(),
+  max: z.string().optional(),
+  facets: z.array(facetSchema).optional(),
+});
+
+// facetValue reads the first facet of a kind off an option, or undefined.
+export const facetValue = (
+  option: ContextStepOptionType | undefined,
+  kind: string,
+): string | undefined => option?.facets?.find((facet) => facet.kind === kind)?.value;
 
 export interface IContextStepOption {
   [key: string]: ContextStepOptionType[] | IContextStepOption;
@@ -121,88 +147,22 @@ export const resolveInputOptions = (
   return undefined;
 };
 
-// Reads the leading number out of a display string (`"3.1%"` → 3.1, `"$1,200"` → 1200),
-// preserving nothing but the magnitude — used only to pick the bounds of a range fold.
-const parseNumeric = (raw: string | undefined): number | undefined => {
-  if (raw === undefined) return undefined;
-  const n = Number(String(raw).replace(/[^0-9.\-]/g, ""));
-  return Number.isFinite(n) ? n : undefined;
-};
-
-// Summarizes many same-format display strings into a `min - max` range, carrying each
-// bound's ORIGINAL string so formatting (%, $, suffixes) is preserved verbatim. Equal
-// bounds collapse to a single value; non-numeric values fall back to the first entry.
-const rangeOf = (raw: (string | undefined)[]): string | undefined => {
-  const present = raw.filter((v): v is string => v !== undefined && v !== "");
-  if (present.length === 0) return undefined;
-  const scored = present.map((s) => ({ s, n: parseNumeric(s) }));
-  if (scored.some((x) => x.n === undefined)) return present[0];
-  let lo = scored[0];
-  let hi = scored[0];
-  for (const x of scored) {
-    if ((x.n as number) < (lo.n as number)) lo = x;
-    if ((x.n as number) > (hi.n as number)) hi = x;
-  }
-  return lo.s === hi.s ? lo.s : `${lo.s} - ${hi.s}`;
-};
+export interface ResolvedInputInfo {
+  facets: ContextStepFacet[];
+  icons?: string[];
+}
 
 /**
- * Resolves the secondary metadata a row draws beneath its identity — the dual of
- * resolveInputOptions. Options resolve DOWN, by the values an input depends on; display
- * resolves UP, from the options of the input that depends on this one (its dimension). The
- * dimension is found through the same `requires` the API already ships: the input whose
- * options are keyed by this one. When that dimension has a resolved value (the action frame
- * entered with it, or the user picked it) the row shows that one entry's icon and rate;
- * otherwise the summary — the icon union and the rate range. The row's TOP-LINE figure is
- * the option's own `info.value` (an action-specific USD balance the server sets — what you
- * can supply, your position, your borrow capacity); it rides above the dimension rate and is
- * carried through unchanged in every branch. An input with no dependent dimension simply
- * renders its own `info`, untouched.
+ * The secondary metadata a row draws beneath its identity: its OWN facets only —
+ * the universal signal that helps you pick (price, 24h change, holdings value). A
+ * row never borrows the dependent dimension's action-specific data (a market's
+ * rate, LTV, cap); the action resolves those on-chain at runtime, and the picker
+ * picks identity. Options that carry an icon group (an E-Mode category's member
+ * assets) surface those beyond the avatar as the subline icon-row.
  */
 export const resolveInputInfo = (
   option: ContextActionOption,
-  inputIndex: number,
-  inputs: ReadonlyArray<{ requires?: number[] }> | undefined,
-  options: ContextActionOptions | undefined,
-  values: ReadonlyArray<ResolvableValue> | undefined,
-  actions: ResolvableActions,
-): ContextActionOption | undefined => {
-  const dimIndex = inputs?.findIndex((input) =>
-    input.requires?.includes(inputIndex),
-  );
-  if (dimIndex === undefined || dimIndex < 0) return option.info;
-
-  // The dimension's entries FOR THIS ROW: overlay the row's own value at our position so the
-  // dimension tree resolves to this option's branch regardless of the wider selection state.
-  const overlay: ResolvableValues = values ? values.slice() : [];
-  overlay[inputIndex] = { value: option.value };
-  const entries = resolveInputOptions(
-    options?.[String(dimIndex)],
-    inputs![dimIndex].requires,
-    overlay,
-    actions,
-  );
-  if (!entries || entries.length === 0) return option.info;
-
-  // The asset's own top-line figure (USD balance), set by the server and the same whichever
-  // market the rate ends up resolving from.
-  const top = option.info?.value;
-
-  const dimValue = derefTagValue(values?.[dimIndex]?.value, actions);
-  const picked =
-    dimValue !== undefined ? chosenOption(entries, dimValue) : undefined;
-  if (picked) {
-    return {
-      value: top,
-      icons: picked.icons,
-      info: { value: picked.info?.info?.value },
-    };
-  }
-
-  const icons = Array.from(new Set(entries.flatMap((e) => e.icons ?? [])));
-  return {
-    value: top,
-    icons,
-    info: { value: rangeOf(entries.map((e) => e.info?.info?.value)) },
-  };
-};
+): ResolvedInputInfo => ({
+  facets: option.facets ?? [],
+  icons: (option.icons?.length ?? 0) > 1 ? option.icons!.slice(1) : undefined,
+});

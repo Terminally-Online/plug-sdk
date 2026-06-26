@@ -3,65 +3,42 @@ import { readInputSentinels, sentinelAmount } from "./sentinel";
 import { InputReference, Sentinel } from "../types/sentence";
 import { ContextActionOption } from "./option";
 
-// An amount input that offers a "max" sentinel sourced from the option chosen for
-// the upstream token input at index 0.
+// An amount input that offers a "max" sentinel sourced from the token option chosen
+// for the upstream token input at index 0.
 const amountInput: InputReference = {
   name: "amount",
   type: "uint256",
   tags: [{ kind: "sentinel", value: Sentinel.Max, reference: 0 }],
 };
 
-const optionWithSentinel = (
-  sentinel: ContextActionOption | undefined,
-): ContextActionOption => ({ value: "0xtoken", label: "USDC", sentinel });
-
 describe("sentinelAmount", () => {
-  it("scales the base-units value by the paired decimals and trims zeros", () => {
+  it("scales the base-units max by decimals and trims zeros", () => {
+    expect(sentinelAmount({ value: "0xtoken", max: "1500000", decimals: 6 })).toBe("1.5");
     expect(
-      sentinelAmount({ label: "max", value: "1500000", info: { value: "6" } }),
-    ).toBe("1.5");
-    expect(
-      sentinelAmount({
-        label: "max",
-        value: "1000000000000000000",
-        info: { value: "18" },
-      }),
+      sentinelAmount({ value: "0xtoken", max: "1000000000000000000", decimals: 18 }),
     ).toBe("1");
   });
 
-  it("treats a sentinel with no decimals scalar as already display-ready", () => {
-    expect(sentinelAmount({ label: "max", value: "42" })).toBe("42");
+  it("treats a max with no decimals as already display-ready", () => {
+    expect(sentinelAmount({ value: "0xtoken", max: "42" })).toBe("42");
   });
 
-  it("yields undefined when there is no value to fill", () => {
-    expect(sentinelAmount({ label: "max" })).toBeUndefined();
+  it("yields undefined when the option carries no max", () => {
+    expect(sentinelAmount({ value: "0xtoken", label: "USDC" })).toBeUndefined();
   });
 });
 
 describe("readInputSentinels", () => {
-  it("returns the sentinel option hanging off the referenced chosen option", () => {
-    const sentinel: ContextActionOption = {
-      label: "max",
-      value: "1500000",
-      info: { value: "6" },
+  it("returns the referenced token option when it carries a max", () => {
+    const token: ContextActionOption = {
+      value: "0xtoken",
+      label: "USDC",
+      max: "1500000",
+      decimals: 6,
     };
-    const result = readInputSentinels(amountInput, () =>
-      optionWithSentinel(sentinel),
-    );
-    expect(result).toEqual([sentinel]);
+    const result = readInputSentinels(amountInput, () => token);
+    expect(result).toEqual([token]);
     expect(sentinelAmount(result[0])).toBe("1.5");
-  });
-
-  it("resolves a kind other than max — nothing is special-cased", () => {
-    const input: InputReference = {
-      name: "amount",
-      type: "uint256",
-      tags: [{ kind: "sentinel", value: "half", reference: 0 }],
-    };
-    const sentinel: ContextActionOption = { label: "half", value: "500000" };
-    expect(
-      readInputSentinels(input, () => optionWithSentinel(sentinel)),
-    ).toEqual([sentinel]);
   });
 
   it("returns one option per sentinel-kind tag the input declares", () => {
@@ -70,20 +47,16 @@ describe("readInputSentinels", () => {
       type: "uint256",
       tags: [
         { kind: "sentinel", value: "max", reference: 0 },
-        { kind: "sentinel", value: "half", reference: 1 },
+        { kind: "sentinel", value: "max", reference: 1 },
       ],
     };
-    const sentinels: Record<number, ContextActionOption> = {
-      0: { label: "max", value: "1000000", info: { value: "6" } },
-      1: { label: "half", value: "500000", info: { value: "6" } },
-    };
     const options: Record<number, ContextActionOption> = {
-      0: optionWithSentinel(sentinels[0]),
-      1: optionWithSentinel(sentinels[1]),
+      0: { value: "0xa", label: "A", max: "1000000", decimals: 6 },
+      1: { value: "0xb", label: "B", max: "500000", decimals: 6 },
     };
     expect(readInputSentinels(input, (ref) => options[ref])).toEqual([
-      sentinels[0],
-      sentinels[1],
+      options[0],
+      options[1],
     ]);
   });
 
@@ -91,17 +64,9 @@ describe("readInputSentinels", () => {
     expect(readInputSentinels(amountInput, () => undefined)).toEqual([]);
   });
 
-  it("skips a referenced option that carries no sentinel", () => {
+  it("skips a referenced option that carries no max", () => {
     expect(
-      readInputSentinels(amountInput, () => optionWithSentinel(undefined)),
-    ).toEqual([]);
-  });
-
-  it("skips a sentinel with no value to fill", () => {
-    expect(
-      readInputSentinels(amountInput, () =>
-        optionWithSentinel({ label: "max" }),
-      ),
+      readInputSentinels(amountInput, () => ({ value: "0xtoken", label: "USDC" })),
     ).toEqual([]);
   });
 
@@ -112,7 +77,7 @@ describe("readInputSentinels", () => {
       tags: [{ kind: "standard", value: "token" }],
     };
     expect(
-      readInputSentinels(tokenInput, () => optionWithSentinel(undefined)),
+      readInputSentinels(tokenInput, () => ({ value: "0xt", max: "1", decimals: 6 })),
     ).toEqual([]);
     expect(
       readInputSentinels({ name: "x", type: "uint256" }, () => undefined),
