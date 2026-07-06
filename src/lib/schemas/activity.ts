@@ -50,6 +50,7 @@ export const ActivityApprovalSchema = z.object({
 export const ActivitySchema = z.object({
   tx_hash: z.string(),
   block_number: z.number(),
+  block_timestamp: z.number(),
   chain_id: z.number(),
   type: z.string(),
   name: z.string(),
