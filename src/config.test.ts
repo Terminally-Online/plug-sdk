@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { createConfig, DEFAULT_SDK_CONFIG, QueryKeys } from "./config";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createConfig,
+  DEFAULT_SDK_CONFIG,
+  QueryKeys,
+  resolveBrowserBaseUrl,
+} from "./config";
 
 describe("createConfig", () => {
   it("should return defaults when no config provided", () => {
@@ -41,6 +46,61 @@ describe("createConfig", () => {
     const config = createConfig({ onError });
     expect(config.onError).toBe(onError);
     expect(config.onSuccess).toBe(DEFAULT_SDK_CONFIG.onSuccess);
+  });
+});
+
+describe("resolveBrowserBaseUrl", () => {
+  const stubWindow = (hostname: string) => {
+    vi.stubGlobal("window", { location: { hostname } });
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("should pass through server-side", () => {
+    expect(resolveBrowserBaseUrl("http://localhost:8080")).toBe(
+      "http://localhost:8080",
+    );
+  });
+
+  it("should pass through non-loopback baseUrls", () => {
+    stubWindow("peepaw-mbp.tailnet.ts.net");
+    expect(resolveBrowserBaseUrl("https://api.plug.to")).toBe(
+      "https://api.plug.to",
+    );
+  });
+
+  it("should pass through when the page itself is on loopback", () => {
+    stubWindow("localhost");
+    expect(resolveBrowserBaseUrl("http://localhost:8080")).toBe(
+      "http://localhost:8080",
+    );
+  });
+
+  it("should remap loopback baseUrl to the page hostname", () => {
+    stubWindow("peepaw-mbp.tailnet.ts.net");
+    expect(resolveBrowserBaseUrl("http://localhost:8080")).toBe(
+      "http://peepaw-mbp.tailnet.ts.net:8080",
+    );
+  });
+
+  it("should remap 127.0.0.1 and preserve the port", () => {
+    stubWindow("100.64.0.7");
+    expect(resolveBrowserBaseUrl("http://127.0.0.1:8080")).toBe(
+      "http://100.64.0.7:8080",
+    );
+  });
+
+  it("should pass through invalid URLs", () => {
+    stubWindow("peepaw-mbp.tailnet.ts.net");
+    expect(resolveBrowserBaseUrl("not-a-url")).toBe("not-a-url");
+  });
+
+  it("should apply inside createConfig", () => {
+    stubWindow("peepaw-mbp.tailnet.ts.net");
+    const config = createConfig({ baseUrl: "http://localhost:8080" });
+    expect(config.baseUrl).toBe("http://peepaw-mbp.tailnet.ts.net:8080");
   });
 });
 

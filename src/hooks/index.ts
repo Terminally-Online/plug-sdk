@@ -12,6 +12,7 @@ export * from "./transaction/useGetTransaction";
 export * from "./transaction/useCreateTransaction";
 export * from "./transaction/useSubmitTransaction";
 
+export * from "./cdn/useBrowserUrl";
 export * from "./cdn/useColor";
 
 export * from "./stream/useStream";

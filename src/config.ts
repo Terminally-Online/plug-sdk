@@ -9,6 +9,43 @@ const minute = 60 * 1000;
 const PRODUCTION_URL = "https://api.plug.to";
 const DEVELOPMENT_URL = "http://localhost:8080";
 
+const LOOPBACK_HOSTNAMES = new Set([
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "[::1]",
+  "::1",
+]);
+
+/**
+ * Rewrites a loopback baseUrl to the page's hostname when the app itself is
+ * being viewed from another machine (Tailscale, LAN). A dev instance shared
+ * over the network keeps its `localhost:8080` env config, and every visitor's
+ * browser resolves the API against the host serving the page instead of their
+ * own machine. Non-loopback baseUrls and server-side execution pass through
+ * untouched.
+ */
+export function resolveBrowserBaseUrl(baseUrl: string): string {
+  if (typeof window === "undefined") return baseUrl;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    return baseUrl;
+  }
+
+  if (!LOOPBACK_HOSTNAMES.has(parsed.hostname)) return baseUrl;
+  if (LOOPBACK_HOSTNAMES.has(window.location.hostname)) return baseUrl;
+
+  parsed.hostname = window.location.hostname;
+  const resolved = parsed.toString();
+  if (!baseUrl.endsWith("/") && resolved.endsWith("/")) {
+    return resolved.slice(0, -1);
+  }
+  return resolved;
+}
+
 function resolveBaseUrl(): string {
   if (process.env.NODE_ENV === "development") return DEVELOPMENT_URL;
   return PRODUCTION_URL;
@@ -166,7 +203,7 @@ export const createConfig = (
       )
     : {};
 
-  return {
+  const merged = {
     ...DEFAULT_SDK_CONFIG,
     ...defined,
     cache: {
@@ -174,5 +211,10 @@ export const createConfig = (
       ...userConfig?.cache,
     },
     auth: userConfig?.auth,
+  };
+
+  return {
+    ...merged,
+    baseUrl: resolveBrowserBaseUrl(merged.baseUrl),
   };
 };

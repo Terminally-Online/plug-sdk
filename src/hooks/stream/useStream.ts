@@ -17,7 +17,7 @@ export type UseStreamOptions = {
   infinite?: boolean;
 };
 
-const STREAMING_ENABLED = false;
+const STREAMING_ENABLED = true;
 
 type InfinitePages = { pages: unknown[]; pageParams: unknown[] };
 
