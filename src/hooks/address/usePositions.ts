@@ -60,7 +60,6 @@ export function usePositions(
   const {
     filter,
     search,
-    history,
     action,
     sort,
     limit,
@@ -74,7 +73,6 @@ export function usePositions(
     address || "",
     filter,
     search,
-    history,
     action,
     sort,
     limit,
@@ -90,7 +88,6 @@ export function usePositions(
         address: address!,
         filter,
         search,
-        history,
         action,
         sort,
         limit,
@@ -109,7 +106,6 @@ export function usePositions(
         address: address!,
         filter,
         search,
-        history,
         action,
         sort,
         limit,
@@ -119,9 +115,7 @@ export function usePositions(
 
   useStream(
     (params, opts) => client.getPositions(params, opts),
-    address
-      ? { address, filter, search, history, action, sort, limit }
-      : undefined,
+    address ? { address, filter, search, action, sort, limit } : undefined,
     isInfinite ? [...queryKey, "infinite"] : queryKey,
     { enabled: enabled && stream && !!address, infinite: isInfinite },
   );

@@ -158,14 +158,6 @@ export const AddressRelationshipSchema = z.object({
   balance: AddressBalanceSchema.optional(),
 });
 
-export const AddressHistorySchema = z.array(
-  z.object({
-    price: AddressPriceSchema.optional(),
-    balance: AddressBalanceSchema.optional(),
-    timestamp: z.number(),
-  }),
-);
-
 export const AddressSchema = z.object({
   chain_id: z.number(),
   address: z.string(),
@@ -180,7 +172,6 @@ export const AddressSchema = z.object({
   attributes: RecursiveStringMapSchema.optional(),
   balance: AddressBalanceSchema.optional(),
   price: AddressPriceSchema.optional(),
-  history: AddressHistorySchema.optional(),
   relationships: z
     .record(z.string(), z.array(AddressRelationshipSchema))
     .optional(),
@@ -248,22 +239,6 @@ export const PositionsSearchSchema = z.object({
   name: z.string().optional().describe("Search by name only."),
   symbol: z.string().optional().describe("Search by symbol only."),
 });
-export const PositionsPriceSchema = z.object({
-  resolution: z
-    .string()
-    .optional()
-    .describe("Price data resolution (e.g., 1h, 1d)."),
-  limit: z
-    .number()
-    .optional()
-    .describe("Maximum number of price points to return."),
-  from: z.number().optional().describe("Unix timestamp for price data start."),
-  to: z.number().optional().describe("Unix timestamp for price data end."),
-  before: z
-    .number()
-    .optional()
-    .describe("Unix timestamp to fetch prices before."),
-});
 export const PositionsActionSchema = z.object({
   refresh: z
     .boolean()
@@ -301,7 +276,6 @@ export const PositionsLimitSchema = z.object({
 export const PositionsQueryParamsSchema = z.object({
   filter: PositionsFilterSchema.optional(),
   search: PositionsSearchSchema.optional(),
-  history: PositionsPriceSchema.optional(),
   action: PositionsActionSchema.optional(),
   sort: PositionsSortSchema.optional(),
   limit: PositionsLimitSchema.optional(),

@@ -28,7 +28,6 @@ export const positions = async (
   options?: {
     filter?: PositionsQueryParams["filter"];
     search?: PositionsQueryParams["search"];
-    history?: PositionsQueryParams["history"];
     action?: PositionsQueryParams["action"];
     sort?: PositionsQueryParams["sort"];
     limit?: PositionsQueryParams["limit"];
@@ -39,7 +38,6 @@ export const positions = async (
       address,
       options?.filter,
       options?.search,
-      options?.history,
       options?.action,
       options?.sort,
       options?.limit,
@@ -49,7 +47,6 @@ export const positions = async (
         address,
         filter: options?.filter,
         search: options?.search,
-        history: options?.history,
         action: options?.action,
         sort: options?.sort,
         limit: options?.limit,
