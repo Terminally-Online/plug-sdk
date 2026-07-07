@@ -144,6 +144,7 @@ export const InputReferenceSchema = z.object({
   defaultValue: z.string().optional(),
   requires: z.array(z.number()).optional(),
   delimiter: z.string().optional(),
+  hidden: z.boolean().optional(),
   coil: z.boolean().optional(),
   tags: InputTagsSchema.optional(),
 });
