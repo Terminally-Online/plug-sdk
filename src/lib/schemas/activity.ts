@@ -55,6 +55,7 @@ export const ActivitySchema = z.object({
   type: z.string(),
   name: z.string(),
   label: z.string(),
+  status: z.enum(["complete", "failed"]).optional(),
   sender: ActivityAddressSchema.optional(),
   recipient: ActivityAddressSchema.optional(),
   value: z.string(),

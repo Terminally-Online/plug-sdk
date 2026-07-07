@@ -108,10 +108,16 @@ export type TagKind = (typeof TagKind)[keyof typeof TagKind];
 // Standard is the `value` of a TagKind.Standard tag — the semantic type an input wants.
 export const Standard = {
   Token: "token",
+  Collection: "collection",
   Market: "market",
   Wallet: "wallet",
   Variable: "variable",
   Selector: "selector",
+  Boolean: "boolean",
+  EModeCategory: "emode_category",
+  Oracle: "oracle",
+  IRM: "irm",
+  Position: "position",
 } as const;
 export type Standard = (typeof Standard)[keyof typeof Standard];
 
