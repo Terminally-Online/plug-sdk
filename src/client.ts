@@ -31,6 +31,9 @@ import {
   CreateTransactionResponseSchema,
   GetTransactionsQueryParams,
   GetTransactionsResponseSchema,
+  CancelTransactionParams,
+  CancelTransactionResponse,
+  CancelTransactionResponseSchema,
   SubmitTransactionParams,
   SubmitTransactionResponse,
   SubmitTransactionResponseSchema,
@@ -479,6 +482,18 @@ export class PlugClient {
     "GET",
     { summary: "Transaction history with filtering across supported chains." },
   )(GetTransactionsResponseSchema);
+
+  readonly cancelTransaction = async (
+    params: CancelTransactionParams,
+  ): Promise<CancelTransactionResponse> => {
+    const { address, id } = params;
+    const url = this.createUrl(
+      `/address/${address}/transaction`,
+      buildQueryParams({ id }),
+    );
+    const data = await this.request<unknown>(url, { method: "DELETE" });
+    return this.createValidator(CancelTransactionResponseSchema)(data, url);
+  };
   readonly createTransaction = this.endpoint<CreateTransactionQueryParams>(
     "/transaction",
     "POST",

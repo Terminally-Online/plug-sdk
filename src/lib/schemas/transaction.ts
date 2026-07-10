@@ -14,39 +14,109 @@ export const TransactionStepSchema = z.object({
   to: z.string(),
   data: z.string(),
 });
-export const TransactionSchema = z.object({
-  id: z.string(),
-  status: z.string(),
-  chain_id: z.number(),
-  address: z.string(),
-  value: z.number(),
-  gas_limit: z.number(),
-  inputs: z.array(TransactionInputSchema),
-  steps: z.array(TransactionStepSchema),
-  created_at: z.string(),
-  updated_at: z.string(),
-});
+
+// ExecutionMode mirrors gusher's models.ExecutionMode*.
+export const ExecutionModeSchema = z.enum(["manual", "scheduled"]);
+
+// SchedulerStatus mirrors gusher's models.SchedulerStatus*.
+export const SchedulerStatusSchema = z.enum([
+  "armed",
+  "waiting",
+  "condition_ready",
+  "execution_ready",
+  "submitted",
+  "failed",
+  "canceled",
+]);
+
+// TransactionSchema tolerates the gusher row payload as-is (value as string,
+// protocol-shaped inputs/steps, scheduler fields absent on manual rows).
+export const TransactionSchema = z
+  .object({
+    id: z.string(),
+    status: z.string(),
+    chain_id: z.number(),
+    address: z.string(),
+    value: z.union([z.string(), z.number()]).optional(),
+    gas_limit: z.number().nullish(),
+    inputs: z.array(z.any()).nullish(),
+    steps: z.any().nullish(),
+    created_at: z.string(),
+    updated_at: z.string(),
+    tx_hash: z.string().nullish(),
+    execution_mode: z.string().optional(),
+    owner_address: z.string().optional(),
+    plugs_hash: z.string().optional(),
+    scheduler_status: z.string().optional(),
+    last_error: z.string().optional(),
+    verdict: z.string().optional(),
+    failing_condition: z.number().optional(),
+    last_simmed_block: z.number().optional(),
+  })
+  .passthrough();
 
 export const GetTransactionsFilterSchema = z.object({
-  id: z.string().optional().describe("Filter results to a specific transaction id."),
-  chain_id: z.number().optional().describe("Filter results to specific chains from the listed of supported options."),
-  status: z.enum(["pending", "confirmed", "failed"]).optional().describe("Filter results to specific transaction statuses."),
+  id: z
+    .string()
+    .optional()
+    .describe("Filter results to a specific transaction id."),
+  chain_id: z
+    .number()
+    .optional()
+    .describe(
+      "Filter results to specific chains from the listed of supported options.",
+    ),
+  status: z
+    .enum(["pending", "confirmed", "failed"])
+    .optional()
+    .describe("Filter results to specific transaction statuses."),
 });
 export const GetTransactionsQueryParamsSchema = z.object({
   filter: GetTransactionsFilterSchema.optional(),
 });
-export const GetTransactionsResponseSchema =
-  createResponseSchema(TransactionSchema);
+export const GetTransactionsResponseSchema = createResponseSchema(
+  z.array(TransactionSchema),
+);
+
+// CancelTransaction targets one standing scheduled intent by row id; the
+// gusher DELETE handler returns the terminal row bare (no response envelope).
+export const CancelTransactionInputSchema = z.object({
+  id: z.string().describe("The intent row id to cancel."),
+});
+export const CancelTransactionResponseSchema = z
+  .object({
+    id: z.string(),
+    status: z.string(),
+    scheduler_status: z.string().optional(),
+    execution_mode: z.string().optional(),
+    tx_hash: z.string().nullish(),
+  })
+  .passthrough();
 
 export const CreateTransactionInputStepSchema = z.object({
-  protocol: z.string().describe("Specify the protocol of the action to create the transaction for."),
-  step: z.string().describe("Specify the action/step to create the transaction for."),
-  inputs: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).describe("The values for each input within the action sentence."),
+  protocol: z
+    .string()
+    .describe(
+      "Specify the protocol of the action to create the transaction for.",
+    ),
+  step: z
+    .string()
+    .describe("Specify the action/step to create the transaction for."),
+  inputs: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .describe("The values for each input within the action sentence."),
 });
 export const CreateTransactionInputSchema = z.object({
   chain_id: z.number().describe("The chain to create the transaction for."),
-  deadline: z.number().optional().describe("A unix timestamp after which the transaction is no longer valid."),
-  steps: z.record(z.number(), CreateTransactionInputStepSchema).describe("The steps/actions to include in the transaction."),
+  deadline: z
+    .number()
+    .optional()
+    .describe(
+      "A unix timestamp after which the transaction is no longer valid.",
+    ),
+  steps: z
+    .record(z.number(), CreateTransactionInputStepSchema)
+    .describe("The steps/actions to include in the transaction."),
 });
 export const CreateTransactionQueryParamsSchema = z.object({
   input: CreateTransactionInputSchema,
@@ -101,10 +171,20 @@ export const SubmitTransactionResponseSchema = z.object({
 export type TransactionInput = z.infer<typeof TransactionInputSchema>;
 export type TransactionStep = z.infer<typeof TransactionStepSchema>;
 export type Transaction = z.infer<typeof TransactionSchema>;
+export type ExecutionMode = z.infer<typeof ExecutionModeSchema>;
+export type SchedulerStatus = z.infer<typeof SchedulerStatusSchema>;
 export type GetTransactionsQueryParams = AddressParams &
   z.infer<typeof GetTransactionsQueryParamsSchema>;
 export type GetTransactionsResponse = z.infer<
   typeof GetTransactionsResponseSchema
+>;
+
+export type CancelTransactionInput = z.infer<
+  typeof CancelTransactionInputSchema
+>;
+export type CancelTransactionParams = AddressParams & CancelTransactionInput;
+export type CancelTransactionResponse = z.infer<
+  typeof CancelTransactionResponseSchema
 >;
 
 export type CreateTransactionQueryParams = AddressParams &
@@ -120,12 +200,16 @@ export const CoilOptionSchema = z.object({
 });
 
 export const CompileTransactionStepSchema = z.object({
-  protocol: z.string().describe("Specify the protocol of the action to compile."),
+  protocol: z
+    .string()
+    .describe("Specify the protocol of the action to compile."),
   step: z.string().describe("Specify the action/step to compile."),
 });
 export const CompileTransactionInputSchema = z.object({
   chain_id: z.number().describe("The chain to compile the transaction for."),
-  steps: z.record(z.number(), CompileTransactionStepSchema).describe("The steps/actions to compile."),
+  steps: z
+    .record(z.number(), CompileTransactionStepSchema)
+    .describe("The steps/actions to compile."),
 });
 export const CompileTransactionQueryParamsSchema = z.object({
   input: CompileTransactionInputSchema,
