@@ -21,10 +21,12 @@ export type UsePositionsInfiniteOptions = UsePositionsOptions & {
 };
 
 type PositionsLinks = PositionsResponse["links"];
+type PositionsHeaders = PositionsResponse["headers"];
 
 type UsePositionsBaseResult = {
   data: Address[];
   links: PositionsLinks;
+  headers: PositionsHeaders;
   isLoading: boolean;
   isFetching: boolean;
   error: Error | null;
@@ -128,6 +130,7 @@ export function usePositions(
     return {
       data: firstPage?.data ?? [],
       links: firstPage?.links,
+      headers: firstPage?.headers,
       pages,
       allData,
       hasNextPage: infinite.hasNextPage ?? false,
@@ -146,6 +149,7 @@ export function usePositions(
   return {
     data: single.data?.data ?? [],
     links: single.data?.links,
+    headers: single.data?.headers,
     isLoading: single.isLoading,
     isFetching: single.isFetching,
     error: single.error,

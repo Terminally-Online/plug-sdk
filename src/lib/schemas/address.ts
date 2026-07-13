@@ -281,8 +281,32 @@ export const PositionsQueryParamsSchema = z.object({
   limit: PositionsLimitSchema.optional(),
 });
 
+export const PortfolioHeadersSchema = z.object({
+  deposit_value: z
+    .string()
+    .optional()
+    .describe("Total USD value deposited across all positions."),
+  debt_value: z
+    .string()
+    .optional()
+    .describe("Total USD value borrowed across all positions."),
+  net_worth: z
+    .string()
+    .optional()
+    .describe("Deposit value minus debt value in USD."),
+  net_carry_apy: z
+    .string()
+    .optional()
+    .describe("Net carry APY across all positions, in percent units."),
+  claimable_value: z
+    .string()
+    .optional()
+    .describe("Total USD value of unclaimed rewards."),
+});
+
 export const PositionsResponseSchema = createResponseSchema(
   z.array(AddressSchema),
+  PortfolioHeadersSchema,
 );
 
 export type AddressBalance = z.infer<typeof AddressBalanceSchema>;
@@ -293,4 +317,5 @@ export type AddressResponse = z.infer<typeof AddressResponseSchema>;
 
 export type PositionsQueryParams = AddressParams &
   z.infer<typeof PositionsQueryParamsSchema>;
+export type PortfolioHeaders = z.infer<typeof PortfolioHeadersSchema>;
 export type PositionsResponse = z.infer<typeof PositionsResponseSchema>;
