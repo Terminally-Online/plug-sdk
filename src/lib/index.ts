@@ -1,5 +1,7 @@
 export * from "./api";
 
+export * from "./functions/portfolio";
+
 export * from "./schemas/action";
 export * from "./schemas/activity";
 export * from "./schemas/address";
