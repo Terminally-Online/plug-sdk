@@ -45,6 +45,8 @@ export const ActivityApprovalSchema = z.object({
   owner: z.string(),
   spender: ActivityApprovalSpenderSchema,
   summary: z.string(),
+  unlimited: z.boolean().optional(),
+  value_usd: z.string().optional(),
 });
 
 export const ActivitySchema = z.object({
