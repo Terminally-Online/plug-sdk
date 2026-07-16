@@ -91,6 +91,68 @@ describe("resolveInputOptions", () => {
     const tree = { "1": [{ value: "0xusdc" }] };
     expect(resolveInputOptions(tree, undefined, [], [])).toBeUndefined();
   });
+
+  it("projects the child dimension flat and deduped when the dep is a coil ref", () => {
+    const tree = {
+      "0xaave": [{ value: "0xusd" }, { value: "0xeth" }],
+      "0xlink": [{ value: "0xusd" }, { value: "0xbtc" }],
+    };
+    const values = [{ value: "<-{0.0}" }];
+    expect(resolveInputOptions(tree, [0], values, [])).toEqual([
+      { value: "0xusd", facets: undefined, max: undefined },
+      { value: "0xeth", facets: undefined, max: undefined },
+      { value: "0xbtc", facets: undefined, max: undefined },
+    ]);
+  });
+
+  it("interleaves the projection by rank so every parent's best options lead", () => {
+    const tree = {
+      a: [{ value: "a1" }, { value: "a2" }],
+      b: [{ value: "b1" }, { value: "b2" }],
+    };
+    const values = [{ value: "<-{0.0}" }];
+    expect(
+      resolveInputOptions(tree, [0], values, [])?.map((o) => o.value),
+    ).toEqual(["a1", "b1", "a2", "b2"]);
+  });
+
+  it("strips per-parent metrics from projected options, leaving identity", () => {
+    const tree = {
+      "0xaave": [
+        { value: "0xusd", max: "1000", facets: [{ kind: "price", value: "$1" }] },
+      ],
+    };
+    const values = [{ value: "<-{0.0}" }];
+    const resolved = resolveInputOptions(tree, [0], values, []);
+    expect(resolved?.[0].value).toBe("0xusd");
+    expect(resolved?.[0].max).toBeUndefined();
+    expect(resolved?.[0].facets).toBeUndefined();
+    expect(tree["0xaave"][0].max).toBe("1000");
+  });
+
+  it("merges record subtrees on a coiled dep so a later dep still keys the chain", () => {
+    const tree = {
+      "0xvault1": { "1": [{ value: "0xpos1" }] },
+      "0xvault2": { "1": [{ value: "0xpos2" }], "2": [{ value: "0xpos3", max: "5" }] },
+    };
+    const values = [{ value: "<-{0.0}" }, { value: "1" }];
+    expect(resolveInputOptions(tree, [0, 1], values, [])).toEqual([
+      { value: "0xpos1", facets: undefined, max: undefined },
+      { value: "0xpos2", facets: undefined, max: undefined },
+    ]);
+
+    const uncollided = resolveInputOptions(tree, [0, 1], [{ value: "<-{0.0}" }, { value: "2" }], []);
+    expect(uncollided?.[0].max).toBeUndefined();
+  });
+
+  it("a tag ref that dereferences to a coil ref also projects", () => {
+    const tree = { "0xaave": [{ value: "0xusd" }] };
+    const values = [{ value: "<~{0.0}" }];
+    const actions = [{ values: [{ value: "<-{1.0}" }] }];
+    expect(resolveInputOptions(tree, [0], values, actions)).toEqual([
+      { value: "0xusd" },
+    ]);
+  });
 });
 
 describe("resolveInputInfo", () => {

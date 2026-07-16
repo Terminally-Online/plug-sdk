@@ -117,9 +117,111 @@ export const chosenOption = (
 
 type OptionsNode = ContextActionOption[] | IContextStepOption;
 
+const COIL_REF_REGEX = /^<-\{/;
+
+/**
+ * Strips per-parent metrics down to the option's identity — facets and max
+ * were computed under a specific parent that a runtime coil no longer names.
+ */
+const projectedOption = (option: ContextActionOption): ContextActionOption => ({
+  ...option,
+  facets: undefined,
+  max: undefined,
+});
+
+/**
+ * Interleaves ranked lists rank-by-rank: every list keeps its builder ranking
+ * and the union takes each rank across all lists before descending, so each
+ * parent's best options lead the projection.
+ */
+const interleaveByRank = (lists: ContextActionOption[][]): ContextActionOption[] => {
+  const out: ContextActionOption[] = [];
+  for (let rank = 0; ; rank++) {
+    let advanced = false;
+    for (const list of lists) {
+      if (rank >= list.length) continue;
+      advanced = true;
+      out.push(list[rank]);
+    }
+    if (!advanced) break;
+  }
+  return out;
+};
+
+/**
+ * Collapses a subtree to a single ranked list; nested trees arise from chained
+ * dependencies and collapse by the same rank interleave, key-sorted for
+ * stability.
+ */
+const collectRanked = (node: ContextActionOption[] | IContextStepOption): ContextActionOption[] => {
+  if (Array.isArray(node)) return node;
+  return interleaveByRank(
+    Object.keys(node)
+      .sort()
+      .map((key) => collectRanked(node[key]))
+      .filter((list) => list.length > 0),
+  );
+};
+
+/**
+ * Merges a dependent tree across every parent key — the resolution when a
+ * dependency is filled by a runtime coil ref and no single subtree can be
+ * chosen. Array subtrees union into the child dimension's flat deduped
+ * rank-interleaved projection, identity only; record subtrees merge key-wise
+ * so a later dependency in the chain can still resolve. Keys iterate sorted
+ * so the projection is stable. Mirrors gusher's projectAcrossKeys
+ * (internal/options/search.go).
+ */
+const mergeAcrossParent = (node: IContextStepOption): OptionsNode => {
+  const children = Object.keys(node)
+    .sort()
+    .map((key) => node[key]);
+
+  if (children.every(Array.isArray)) {
+    const seen = new Set<string>();
+    const out: ContextActionOption[] = [];
+    for (const option of interleaveByRank(children.filter((list) => list.length > 0))) {
+      const value = String(option.value);
+      if (seen.has(value)) continue;
+      seen.add(value);
+      out.push(projectedOption(option));
+    }
+    return out;
+  }
+
+  const merged: IContextStepOption = {};
+  for (const child of children) {
+    if (Array.isArray(child)) continue;
+    for (const key of Object.keys(child)) {
+      const existing = merged[key];
+      if (!existing) {
+        merged[key] = projectLeaves(child[key]);
+        continue;
+      }
+      merged[key] = mergeAcrossParent({ a: existing, b: child[key] } as IContextStepOption);
+    }
+  }
+  return merged;
+};
+
+/**
+ * Strips every leaf option below a node to identity — the treatment all
+ * options reached through a coiled dependency receive, whether or not their
+ * branch collided during the merge.
+ */
+const projectLeaves = (node: ContextActionOption[] | IContextStepOption): ContextActionOption[] | IContextStepOption => {
+  if (Array.isArray(node)) return node.map(projectedOption);
+  const out: IContextStepOption = {};
+  for (const key of Object.keys(node)) out[key] = projectLeaves(node[key]);
+  return out;
+};
+
 /**
  * Walks a nested options tree for a single input, following the `requires` dependency
- * chain and dereferencing tag values along the way.
+ * chain and dereferencing tag values along the way. A dependency filled by a runtime
+ * coil ref (`<-{a.k}`) has no literal key, so the tree resolves across every parent
+ * key — the child dimension's flat deduped projection — mirroring gusher's
+ * resolveFocusedList (internal/options/search.go).
  *
  * Returns the resolved flat options array, or undefined if the tree can't be fully resolved.
  */
@@ -137,6 +239,10 @@ export const resolveInputOptions = (
     for (const depIdx of requires) {
       const depValue = derefTagValue(values?.[depIdx]?.value, actions);
       if (depValue && typeof current === "object" && !Array.isArray(current)) {
+        if (COIL_REF_REGEX.test(String(depValue))) {
+          current = mergeAcrossParent(current);
+          continue;
+        }
         current = current[String(depValue)];
         if (!current) return undefined;
       }

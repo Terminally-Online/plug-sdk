@@ -134,18 +134,30 @@ export function useContext(
 
   const shape = result.data?.data ?? undefined;
 
+  // A dependency filled by a runtime coil ref makes the focused list a server
+  // projection: the client's local projection over the shape call's capped
+  // subtrees is only a preview, so the focused list always fetches from the
+  // server (offset 0) and replaces it — the server is the single source of
+  // truth for the projected set, its order, and its pagination.
+  const coiled = useMemo(
+    () => Object.values(selections ?? {}).some((value) => /^<-\{/.test(String(value))),
+    [selections],
+  );
+
   // The shape call already returns the focused input's first OPTION_PAGE_SIZE
   // entries, so there is only a further page to fetch when that first page came
   // back full. Resolving against `selections` lets a dependent (tree) input check
-  // the right subtree, not the whole map.
+  // the right subtree, not the whole map. A coiled dependency always fetches —
+  // the server owns the projection.
   const focusedFull = useMemo(() => {
     if (input == null || !filter?.protocol || !filter?.action || !shape) return false;
+    if (coiled) return true;
     const node = shape[filter.protocol]?.actions?.[filter.action]?.options?.[String(input)];
     if (!node) return false;
     const { requires, values } = selectionsToValues(selections);
     const leaf = resolveInputOptions(node, requires, values, []);
     return (leaf?.length ?? 0) >= OPTION_PAGE_SIZE;
-  }, [shape, input, filter?.protocol, filter?.action, selections]);
+  }, [shape, input, filter?.protocol, filter?.action, selections, coiled]);
 
   // Focused pagination: continues the focused input's list past the first page.
   // It resumes at OPTION_PAGE_SIZE (the shape call owns page one) and then follows
@@ -167,14 +179,19 @@ export function useContext(
             limit: { count: OPTION_PAGE_SIZE, offset: pageParam },
           }),
     getNextPageParam: (lastPage) => lastPage.links?.next ?? undefined,
-    initialPageParam: OPTION_PAGE_SIZE as number | string,
+    initialPageParam: (coiled ? 0 : OPTION_PAGE_SIZE) as number | string,
     enabled: enabled && !!address && input != null && focusedFull,
     placeholderData: keepPreviousData,
   });
 
-  // Merge the focused pages onto the shape: every extra page is the focused input's
-  // next flat slice, appended to that input's resolved leaf so the consumer reads one
-  // continuous list. Cloned so the cached shape is never mutated.
+  // Merge the focused pages onto the shape: the focused input's node is replaced
+  // with one continuous flat list. Replacement, not leaf mutation: a coiled
+  // dependency resolves to a freshly built projection rather than a reference
+  // into the tree, so pushing into the resolved leaf would drop the pages. A
+  // coiled focused list is the server pages alone (fetched from offset 0 — the
+  // client projection is only the pre-fetch preview); a literal one is its
+  // shape-call first page plus the pages that resume after it. Cloned so the
+  // cached shape is never mutated.
   const raw = useMemo(() => {
     if (!shape || input == null || !filter?.protocol || !filter?.action) return shape;
     const extra: ContextActionOption[] = [];
@@ -184,13 +201,19 @@ export function useContext(
     }
     if (extra.length === 0) return shape;
     const cloned = structuredClone(shape) as Context;
-    const node = cloned[filter.protocol]?.actions?.[filter.action]?.options?.[String(input)];
-    if (!node) return shape;
+    const options = cloned[filter.protocol]?.actions?.[filter.action]?.options;
+    const node = options?.[String(input)];
+    if (!options || !node) return shape;
+    if (coiled) {
+      options[String(input)] = extra;
+      return cloned;
+    }
     const { requires, values } = selectionsToValues(selections);
     const leaf = resolveInputOptions(node, requires, values, []);
-    if (leaf) leaf.push(...extra);
+    if (!leaf) return shape;
+    options[String(input)] = [...leaf.slice(0, OPTION_PAGE_SIZE), ...extra];
     return cloned;
-  }, [shape, pages.data, input, filter?.protocol, filter?.action, selections]);
+  }, [shape, pages.data, input, filter?.protocol, filter?.action, selections, coiled]);
 
   const base: UseContextBase = {
     isLoading: result.isLoading,
