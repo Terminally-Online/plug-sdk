@@ -32,6 +32,9 @@ export const ActivityTokenSchema = z.object({
 export const ActivityFlowSchema = z.object({
   amount: ActivityAmountSchema,
   token_id: z.string().optional(),
+  // Gas legs carry the category the chain assigned them: the burned base fee
+  // or the fee recipient's tip.
+  role: z.enum(["burn", "tip"]).optional(),
   peer: ActivityAddressSchema,
 });
 
