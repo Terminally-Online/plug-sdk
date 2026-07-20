@@ -508,7 +508,7 @@ export class PlugClient {
     {
       scope: "root",
       summary:
-        "Compile an action sequence into coil options and output manifests.",
+        "Compile a draft action sequence into coil options, output manifests, and simulated slot values.",
     },
   )(CompileTransactionResponseSchema);
 

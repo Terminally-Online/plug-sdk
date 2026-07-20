@@ -204,6 +204,10 @@ export const CompileTransactionStepSchema = z.object({
     .string()
     .describe("Specify the protocol of the action to compile."),
   step: z.string().describe("Specify the action/step to compile."),
+  inputs: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .optional()
+    .describe("The values for each input within the action sentence."),
 });
 export const CompileTransactionInputSchema = z.object({
   chain_id: z.number().describe("The chain to compile the transaction for."),
@@ -214,8 +218,35 @@ export const CompileTransactionInputSchema = z.object({
 export const CompileTransactionQueryParamsSchema = z.object({
   input: CompileTransactionInputSchema,
 });
+
+export const SimulationSlotSchema = z.object({
+  name: z.string(),
+  type: z.any(),
+  slot: z.number(),
+  tags: z.array(z.any()).nullish(),
+  value: z.string().nullish(),
+});
+export const SimulationOutputSchema = z.object({
+  action_index: z.number(),
+  action: z.string(),
+  slots: z.array(SimulationSlotSchema),
+});
+export const SimulationSchema = z.object({
+  verdict: z.string().nullish(),
+  reason: z.string().nullish(),
+  failing_step: z.number().nullish(),
+  gas_used: z.number().nullish(),
+  block_number: z.number().nullish(),
+  outputs: z.array(SimulationOutputSchema).nullish(),
+});
+
+export const CompileTransactionDataSchema = z.object({
+  options: z.array(z.record(z.string(), z.array(CoilOptionSchema))).nullish(),
+  outputs: z.array(z.any()).nullish(),
+  simulation: SimulationSchema.nullish(),
+});
 export const CompileTransactionResponseSchema = createResponseSchema(
-  z.array(z.record(z.string(), z.array(CoilOptionSchema))),
+  CompileTransactionDataSchema,
 );
 
 export type RelaySwapRegion = z.infer<typeof RelaySwapRegionSchema>;
@@ -235,4 +266,11 @@ export type CompileTransactionQueryParams = z.infer<
 >;
 export type CompileTransactionResponse = z.infer<
   typeof CompileTransactionResponseSchema
+>;
+
+export type SimulationSlot = z.infer<typeof SimulationSlotSchema>;
+export type SimulationOutput = z.infer<typeof SimulationOutputSchema>;
+export type Simulation = z.infer<typeof SimulationSchema>;
+export type CompileTransactionData = z.infer<
+  typeof CompileTransactionDataSchema
 >;

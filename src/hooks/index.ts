@@ -9,6 +9,7 @@ export * from "./chain/useChain";
 
 export * from "./transaction/useCompile";
 export * from "./transaction/useGetTransaction";
+export * from "./transaction/useProjection";
 export * from "./transaction/useCancelTransaction";
 export * from "./transaction/useCreateTransaction";
 export * from "./transaction/useSubmitTransaction";

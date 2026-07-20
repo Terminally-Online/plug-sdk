@@ -172,6 +172,9 @@ export const QueryKeys = {
   compile: (input?: Record<string, unknown>) =>
     [...QueryKeys.all, "compile", stableStringify(input)] as const,
 
+  projection: (input?: Record<string, unknown>) =>
+    [...QueryKeys.all, "projection", stableStringify(input)] as const,
+
   series: (
     address: string,
     filter?: Record<string, unknown>,
