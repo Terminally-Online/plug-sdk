@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { usePlugQueryClient } from "../../provider";
+import { usePlugContext, usePlugQueryClient } from "../../provider";
 
 export type StreamOptions = {
   onData: (data: unknown) => void;
@@ -28,6 +28,7 @@ export function useStream<TParams>(
   options: UseStreamOptions = {},
 ): void {
   const queryClient = usePlugQueryClient();
+  const { client } = usePlugContext();
   const { enabled = true, infinite = false } = options;
 
   const paramsRef = useRef(params);
@@ -40,7 +41,8 @@ export function useStream<TParams>(
   const keyString = JSON.stringify(queryKey);
 
   useEffect(() => {
-    if (!STREAMING_ENABLED || !enabled || paramsRef.current === undefined) return;
+    if (!STREAMING_ENABLED || !enabled || paramsRef.current === undefined)
+      return;
 
     let close: (() => void) | undefined;
     let paused = false;
@@ -50,10 +52,12 @@ export function useStream<TParams>(
         queryClient.setQueryData(keyRef.current, data);
         return;
       }
-      queryClient.setQueryData(keyRef.current, (old: InfinitePages | undefined) =>
-        old && Array.isArray(old.pages)
-          ? { ...old, pages: [data, ...old.pages.slice(1)] }
-          : { pages: [data], pageParams: [undefined] },
+      queryClient.setQueryData(
+        keyRef.current,
+        (old: InfinitePages | undefined) =>
+          old && Array.isArray(old.pages)
+            ? { ...old, pages: [data, ...old.pages.slice(1)] }
+            : { pages: [data], pageParams: [undefined] },
       );
     };
 
@@ -92,5 +96,9 @@ export function useStream<TParams>(
       }
       stop();
     };
-  }, [keyString, enabled, infinite, queryClient]);
+    // The client owns the stream manager holding this subscription. A new
+    // client is a new manager: the effect must close against the old one and
+    // resubscribe on the new, or the orphaned generation's connection lives
+    // until unmount while new mounts open duplicates beside it.
+  }, [keyString, enabled, infinite, queryClient, client]);
 }
