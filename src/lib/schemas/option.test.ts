@@ -24,11 +24,49 @@ describe("derefTagValue", () => {
 
   it("resolves a tag reference to the source action's stored value", () => {
     expect(derefTagValue("<~{0.1}", actions)).toBe("100");
-    expect(derefTagValue("<={1.0}", actions)).toBe("0xto");
   });
 
   it("yields undefined when the referenced slot is empty", () => {
     expect(derefTagValue("<~{1.5}", actions)).toBeUndefined();
+  });
+
+  it("follows a variable binding to the setter's held value, not its name key", () => {
+    const withSetter = [{ values: [{ value: "myToken" }, { value: "0xusdc" }] }];
+    expect(derefTagValue("<={0.0}", withSetter)).toBe("0xusdc");
+  });
+
+  it("returns the setter's output coil as-is for cross-parent projection", () => {
+    const withSetter = [{ values: [{ value: "myToken" }, { value: "<-{2.0}" }] }];
+    expect(derefTagValue("<={0.0}", withSetter)).toBe("<-{2.0}");
+  });
+
+  it("resolves a setter holding a tag reference transitively", () => {
+    const chained = [
+      { values: [{ value: "0xdai" }, { value: "100" }] },
+      { values: [{ value: "myToken" }, { value: "<~{0.0}" }] },
+    ];
+    expect(derefTagValue("<={1.0}", chained)).toBe("0xdai");
+  });
+
+  it("follows set-to-set aliases through the chain", () => {
+    const aliased = [
+      { values: [{ value: "x" }, { value: "0xweth" }] },
+      { values: [{ value: "y" }, { value: "<={0.0}" }] },
+    ];
+    expect(derefTagValue("<={1.0}", aliased)).toBe("0xweth");
+  });
+
+  it("yields undefined on an alias cycle instead of recursing forever", () => {
+    const cyclic = [
+      { values: [{ value: "x" }, { value: "<={1.0}" }] },
+      { values: [{ value: "y" }, { value: "<={0.0}" }] },
+    ];
+    expect(derefTagValue("<={0.0}", cyclic)).toBeUndefined();
+  });
+
+  it("yields undefined when the setter holds no value yet", () => {
+    const empty = [{ values: [{ value: "myToken" }] }];
+    expect(derefTagValue("<={0.0}", empty)).toBeUndefined();
   });
 });
 
@@ -151,6 +189,28 @@ describe("resolveInputOptions", () => {
     const actions = [{ values: [{ value: "<-{1.0}" }] }];
     expect(resolveInputOptions(tree, [0], values, actions)).toEqual([
       { value: "0xusd" },
+    ]);
+  });
+
+  it("keys the tree through a variable binding holding a literal", () => {
+    const tree = { "0xusdc": [{ value: "0xmarket" }] };
+    const values = [{ value: "<={0.0}" }];
+    const actions = [{ values: [{ value: "myToken" }, { value: "0xusdc" }] }];
+    expect(resolveInputOptions(tree, [0], values, actions)).toEqual([
+      { value: "0xmarket" },
+    ]);
+  });
+
+  it("projects across parents when the variable holds an output coil", () => {
+    const tree = {
+      "0xaave": [{ value: "0xusd", max: "10" }],
+      "0xlink": [{ value: "0xbtc" }],
+    };
+    const values = [{ value: "<={0.0}" }];
+    const actions = [{ values: [{ value: "myToken" }, { value: "<-{2.0}" }] }];
+    expect(resolveInputOptions(tree, [0], values, actions)).toEqual([
+      { value: "0xusd", facets: undefined, max: undefined },
+      { value: "0xbtc", facets: undefined, max: undefined },
     ]);
   });
 });

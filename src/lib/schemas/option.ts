@@ -86,20 +86,39 @@ export type ResolvableValues = ResolvableValue[];
 export type ResolvableAction = { values?: ResolvableValues } | undefined;
 export type ResolvableActions = ResolvableAction[];
 
-const TAG_REF_REGEX = /^<[~=]\{(\d+)\.(\d+)\}$/;
+const TAG_REF_REGEX = /^<([~=])\{(\d+)\.(\d+)\}$/;
 
 /**
- * Dereferences a value that may be a tag reference (`<~{actionIndex.inputIndex}`),
- * resolving it to the actual stored value from the source action.
+ * Dereferences a value that may be a tag reference (`<~{actionIndex.inputIndex}`)
+ * or a variable binding (`<={actionIndex.keyIndex}`), resolving it to the actual
+ * stored value from the source action. A tag reference reads the referenced input
+ * directly. A variable binding names the setter's key input; the value the
+ * variable holds is the setter's non-key input, so the binding follows through to
+ * it. Either resolution may land on another reference (`set X to Y` chains) and
+ * follows transitively, cycle-guarded; a runtime output coil (`<-{}`) is returned
+ * as-is for the caller's cross-parent projection.
  */
 export const derefTagValue = (
   value: string | number | undefined,
   actions: ResolvableActions,
+  seen: Set<string> = new Set(),
 ): string | number | undefined => {
   if (typeof value !== "string") return value;
   const match = value.match(TAG_REF_REGEX);
   if (!match) return value;
-  return actions[parseInt(match[1])]?.values?.[parseInt(match[2])]?.value;
+  if (seen.has(value)) return undefined;
+  seen.add(value);
+
+  const values = actions[parseInt(match[2])]?.values;
+  const index = parseInt(match[3]);
+  if (match[1] === "=") {
+    const payload = Object.entries(values ?? {}).find(
+      ([key, candidate]) =>
+        key !== String(index) && candidate?.value !== undefined,
+    )?.[1];
+    return derefTagValue(payload?.value, actions, seen);
+  }
+  return derefTagValue(values?.[index]?.value, actions, seen);
 };
 
 /**
