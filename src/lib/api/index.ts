@@ -53,6 +53,7 @@ export interface ApiParam {
   description: string;
   default?: string;
   enum?: string[];
+  array?: boolean;
   example?: string;
 }
 
@@ -221,6 +222,10 @@ const flattenParamsFromSchema = (
       const enumValues = getEnumValues(fieldSchema);
       if (enumValues) {
         param.enum = enumValues;
+      }
+
+      if (fieldUnwrapped instanceof ZodArray) {
+        param.array = true;
       }
 
       if (example && key === "address") {

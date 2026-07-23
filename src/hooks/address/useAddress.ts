@@ -33,6 +33,7 @@ export function useAddress(
 
   return {
     ...result.data,
+    queryKey,
     isLoading: result.isLoading,
     isFetching: result.isFetching,
     error: result.error,

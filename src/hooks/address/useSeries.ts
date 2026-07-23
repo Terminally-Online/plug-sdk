@@ -24,6 +24,7 @@ export type UseSeriesInfiniteOptions = UseSeriesOptions & {
 type SeriesLinks = SeriesResponse["links"];
 
 type UseSeriesBaseResult = {
+  queryKey: readonly unknown[];
   data: SeriesEntry[];
   links: SeriesLinks;
   isLoading: boolean;
@@ -131,6 +132,10 @@ export function useSeries(
 
   if (isInfinite) {
     return {
+      queryKey: [
+        ...QueryKeys.series(address || "", filter, time, sort, limit),
+        "infinite",
+      ],
       data: firstPage?.data ?? [],
       links: firstPage?.links,
       pages,
@@ -149,6 +154,7 @@ export function useSeries(
   }
 
   return {
+    queryKey: QueryKeys.series(address || "", filter, time, sort, limit),
     data: single.data?.data ?? [],
     links: single.data?.links,
     isLoading: single.isLoading,

@@ -24,6 +24,7 @@ type PositionsLinks = PositionsResponse["links"];
 type PositionsHeaders = PositionsResponse["headers"];
 
 type UsePositionsBaseResult = {
+  queryKey: readonly unknown[];
   data: Address[];
   links: PositionsLinks;
   headers: PositionsHeaders;
@@ -128,6 +129,7 @@ export function usePositions(
 
   if (isInfinite) {
     return {
+      queryKey: [...queryKey, "infinite"],
       data: firstPage?.data ?? [],
       links: firstPage?.links,
       headers: firstPage?.headers,
@@ -147,6 +149,7 @@ export function usePositions(
   }
 
   return {
+    queryKey,
     data: single.data?.data ?? [],
     links: single.data?.links,
     headers: single.data?.headers,

@@ -22,6 +22,7 @@ export type UseActivityInfiniteOptions = UseActivityOptions & {
 type ActivityLinks = GetActivityResponse["links"];
 
 type UseActivityBaseResult = {
+  queryKey: readonly unknown[];
   data: Activity[];
   links: ActivityLinks;
   isLoading: boolean;
@@ -100,6 +101,7 @@ export function useActivity(
 
   if (isInfinite) {
     return {
+      queryKey: [...QueryKeys.activity(address || "", filter, limit), "infinite"],
       data: firstPage?.data ?? [],
       links: firstPage?.links,
       pages,
@@ -115,6 +117,7 @@ export function useActivity(
   }
 
   return {
+    queryKey: QueryKeys.activity(address || "", filter, limit),
     data: single.data?.data ?? [],
     links: single.data?.links,
     isLoading: single.isLoading,
