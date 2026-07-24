@@ -240,9 +240,44 @@ export const SimulationSchema = z.object({
   outputs: z.array(SimulationOutputSchema).nullish(),
 });
 
+export const IRInstructionSchema = z.object({
+  index: z.number(),
+  kind: z.string(),
+  label: z.string().nullish(),
+  dead: z.boolean().nullish(),
+  reads: z.array(z.number()).nullish(),
+  writes: z.array(z.number()).nullish(),
+});
+
+export const IntentNodeSchema = z.object({
+  step: z.number(),
+  protocol: z.string(),
+  action: z.string(),
+  outputs: z.array(z.any()).nullish(),
+  ir: z.array(IRInstructionSchema).nullish(),
+});
+
+export const IntentEdgeSchema = z.object({
+  kind: z.enum(["output", "input", "state"]),
+  source: z.number(),
+  source_slot: z.number(),
+  source_name: z.string().nullish(),
+  source_tags: z.any().nullish(),
+  fields: z.array(z.number()).nullish(),
+  target: z.number(),
+  target_input: z.string(),
+  ref: z.string(),
+});
+
+export const IntentGraphSchema = z.object({
+  nodes: z.array(IntentNodeSchema),
+  edges: z.array(IntentEdgeSchema),
+});
+
 export const CompileTransactionDataSchema = z.object({
   options: z.array(z.record(z.string(), z.array(CoilOptionSchema))).nullish(),
   outputs: z.array(z.any()).nullish(),
+  graph: IntentGraphSchema.nullish(),
   simulation: SimulationSchema.nullish(),
 });
 export const CompileTransactionResponseSchema = createResponseSchema(
@@ -268,6 +303,10 @@ export type CompileTransactionResponse = z.infer<
   typeof CompileTransactionResponseSchema
 >;
 
+export type IRInstruction = z.infer<typeof IRInstructionSchema>;
+export type IntentNode = z.infer<typeof IntentNodeSchema>;
+export type IntentEdge = z.infer<typeof IntentEdgeSchema>;
+export type IntentGraph = z.infer<typeof IntentGraphSchema>;
 export type SimulationSlot = z.infer<typeof SimulationSlotSchema>;
 export type SimulationOutput = z.infer<typeof SimulationOutputSchema>;
 export type Simulation = z.infer<typeof SimulationSchema>;
