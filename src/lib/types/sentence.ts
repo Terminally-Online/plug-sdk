@@ -16,7 +16,7 @@ export const SentenceModeSchema = z.union([
   z.literal("if"),
   z.literal("if_not"),
   z.literal("else_if"),
-  z.literal("while"),
+  z.literal("for"),
   z.literal("until"),
   z.literal("require"),
 ]);

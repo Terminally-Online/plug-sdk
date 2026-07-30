@@ -229,7 +229,7 @@ describe("isModeType", () => {
 describe("ModeTypeSchema", () => {
   it("accepts the canonical 7-verb predicate shape gusher emits", () => {
     const parsed = ModeTypeSchema.parse({
-      modes: ["is", "if", "if_not", "else_if", "while", "until", "require"],
+      modes: ["is", "if", "if_not", "else_if", "for", "until", "require"],
     });
     expect(parsed.modes.length).toBe(7);
   });
