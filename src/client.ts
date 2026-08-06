@@ -478,7 +478,7 @@ export class PlugClient {
   )(GetActivityResponseSchema);
 
   readonly getTransactions = this.endpoint<GetTransactionsQueryParams>(
-    "/transaction",
+    "/transaction/",
     "GET",
     { summary: "Transaction history with filtering across supported chains." },
   )(GetTransactionsResponseSchema);
@@ -488,7 +488,7 @@ export class PlugClient {
   ): Promise<CancelTransactionResponse> => {
     const { address, id } = params;
     const url = this.createUrl(
-      `/address/${address}/transaction`,
+      `/address/${address}/transaction/`,
       buildQueryParams({ id }),
     );
     const data = await this.request<unknown>(url, { method: "DELETE" });
