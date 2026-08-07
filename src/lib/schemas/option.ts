@@ -284,6 +284,13 @@ export const resolveInputOptions = (
  * the surviving options — empty when no parent value can reach the pinned
  * dependent, which renders honestly as nothing valid to pick.
  */
+// Option values and the values pinned against them are compared in one
+// canonical case. Addresses reach the client in both forms — an option list
+// carries them lowercase, while an attribute may carry the EIP-55 checksum it
+// was rendered with — and the checksum is a display convention, never part of
+// the value.
+const canonical = (value: unknown) => String(value).toLowerCase();
+
 export const narrowByDependent = (
   parentOptions: ContextActionOption[] | undefined,
   parentIndex: number,
@@ -305,8 +312,8 @@ export const narrowByDependent = (
   const valid = new Set<string>();
   const walk = (node: OptionsNode, depth: number, parentKey: string | undefined) => {
     if (Array.isArray(node)) {
-      if (parentKey !== undefined && node.some((option) => String(option.value) === String(target))) {
-        valid.add(parentKey);
+      if (parentKey !== undefined && node.some((option) => canonical(option.value) === canonical(target))) {
+        valid.add(canonical(parentKey));
       }
       return;
     }
@@ -325,7 +332,7 @@ export const narrowByDependent = (
   };
   walk(options, 0, undefined);
 
-  return parentOptions.filter((option) => valid.has(String(option.value)));
+  return parentOptions.filter((option) => valid.has(canonical(option.value)));
 };
 
 export interface ResolvedInputInfo {

@@ -298,6 +298,17 @@ describe("narrowByDependent", () => {
     expect(narrowed?.map((option) => option.value)).toEqual(["0xweth", "0xusdc"]);
   });
 
+  it("matches a checksummed pin against lowercase option values", () => {
+    const narrowed = narrowByDependent(
+      tokens,
+      1,
+      { options: marketsByToken, requires: [1], value: "0xM1" },
+      [],
+      [],
+    );
+    expect(narrowed?.map((option) => option.value)).toEqual(["0xweth"]);
+  });
+
   it("returns an empty set when no parent reaches the pinned dependent", () => {
     const narrowed = narrowByDependent(
       tokens,
