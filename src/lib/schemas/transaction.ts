@@ -211,6 +211,12 @@ export const CompileTransactionStepSchema = z.object({
 });
 export const CompileTransactionInputSchema = z.object({
   chain_id: z.number().describe("The chain to compile the transaction for."),
+  owner: z
+    .string()
+    .optional()
+    .describe(
+      "The simulation subject: drafts compile and simulate at this address's counterfactual socket, so user-specific reads observe its real chain state. Absent, drafts simulate on the synthetic account.",
+    ),
   steps: z
     .record(z.number(), CompileTransactionStepSchema)
     .describe("The steps/actions to compile."),
@@ -223,6 +229,7 @@ export const SimulationSlotSchema = z.object({
   name: z.string(),
   type: z.any(),
   slot: z.number(),
+  path: z.string(),
   tags: z.array(z.any()).nullish(),
   value: z.string().nullish(),
 });
