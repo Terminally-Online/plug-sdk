@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   chosenOption,
   derefTagValue,
+  narrowByDependent,
   resolveInputInfo,
   resolveInputOptions,
 } from "./option";
@@ -261,5 +262,86 @@ describe("resolveInputInfo", () => {
 
   it("adds no subline icon-row for a single-icon option", () => {
     expect(resolveInputInfo(usdc).icons).toBeUndefined();
+  });
+});
+
+describe("narrowByDependent", () => {
+  const tokens: ContextActionOption[] = [
+    { value: "0xweth", name: "WETH" },
+    { value: "0xusdc", name: "USDC" },
+    { value: "0xdai", name: "DAI" },
+  ];
+  const marketsByToken = {
+    "0xweth": [{ value: "0xm1" }, { value: "0xm2" }],
+    "0xusdc": [{ value: "0xm2" }],
+  };
+
+  it("keeps only the parents that can reach the pinned dependent", () => {
+    const narrowed = narrowByDependent(
+      tokens,
+      1,
+      { options: marketsByToken, requires: [1], value: "0xm1" },
+      [],
+      [],
+    );
+    expect(narrowed?.map((option) => option.value)).toEqual(["0xweth"]);
+  });
+
+  it("keeps every parent whose subtree carries the shared dependent", () => {
+    const narrowed = narrowByDependent(
+      tokens,
+      1,
+      { options: marketsByToken, requires: [1], value: "0xm2" },
+      [],
+      [],
+    );
+    expect(narrowed?.map((option) => option.value)).toEqual(["0xweth", "0xusdc"]);
+  });
+
+  it("returns an empty set when no parent reaches the pinned dependent", () => {
+    const narrowed = narrowByDependent(
+      tokens,
+      1,
+      { options: marketsByToken, requires: [1], value: "0xmissing" },
+      [],
+      [],
+    );
+    expect(narrowed).toEqual([]);
+  });
+
+  it("leaves the parent untouched for flat, unrelated, or coil-pinned dependents", () => {
+    expect(
+      narrowByDependent(tokens, 1, { options: [{ value: "0xm1" }], requires: [1], value: "0xm1" }, [], []),
+    ).toBe(tokens);
+    expect(
+      narrowByDependent(tokens, 1, { options: marketsByToken, requires: [0], value: "0xm1" }, [], []),
+    ).toBe(tokens);
+    expect(
+      narrowByDependent(tokens, 1, { options: marketsByToken, requires: [1], value: "<-{0.0}" }, [], []),
+    ).toBe(tokens);
+  });
+
+  it("constrains through a resolved sibling parent and branches an unresolved one", () => {
+    const nested = {
+      weighted: { "0xweth": [{ value: "0xm1" }], "0xusdc": [{ value: "0xm2" }] },
+      stable: { "0xdai": [{ value: "0xm1" }] },
+    };
+    const constrained = narrowByDependent(
+      tokens,
+      1,
+      { options: nested, requires: [0, 1], value: "0xm1" },
+      [{ value: "weighted" }],
+      [],
+    );
+    expect(constrained?.map((option) => option.value)).toEqual(["0xweth"]);
+
+    const branched = narrowByDependent(
+      tokens,
+      1,
+      { options: nested, requires: [0, 1], value: "0xm1" },
+      [],
+      [],
+    );
+    expect(branched?.map((option) => option.value)).toEqual(["0xweth", "0xdai"]);
   });
 });

@@ -272,6 +272,62 @@ export const resolveInputOptions = (
   return undefined;
 };
 
+/**
+ * Narrows a parent input's options through an already-resolved dependent — the
+ * upward complement of resolveInputOptions. The option model only points
+ * downward (a dependent's tree is keyed by its parents' values), so when the
+ * dependent resolves first — a launched position pinning its market before the
+ * spent token is chosen — the parent's flat list filters through the
+ * dependent's tree: a parent value survives only when some path consistent
+ * with every other resolved parent reaches a leaf carrying the dependent's
+ * value. Unresolved and coil-valued parents branch across every key. Returns
+ * the surviving options — empty when no parent value can reach the pinned
+ * dependent, which renders honestly as nothing valid to pick.
+ */
+export const narrowByDependent = (
+  parentOptions: ContextActionOption[] | undefined,
+  parentIndex: number,
+  dependent: {
+    options: OptionsNode | undefined;
+    requires: number[] | undefined;
+    value: string | number | undefined;
+  },
+  values: ResolvableValues | undefined,
+  actions: ResolvableActions,
+): ContextActionOption[] | undefined => {
+  if (!parentOptions) return parentOptions;
+  const { options, requires } = dependent;
+  if (!options || Array.isArray(options)) return parentOptions;
+  if (!requires?.length || !requires.includes(parentIndex)) return parentOptions;
+  const target = derefTagValue(dependent.value, actions);
+  if (target === undefined || COIL_REF_REGEX.test(String(target))) return parentOptions;
+
+  const valid = new Set<string>();
+  const walk = (node: OptionsNode, depth: number, parentKey: string | undefined) => {
+    if (Array.isArray(node)) {
+      if (parentKey !== undefined && node.some((option) => String(option.value) === String(target))) {
+        valid.add(parentKey);
+      }
+      return;
+    }
+    const depIdx = requires[depth];
+    if (depIdx === parentIndex) {
+      for (const key of Object.keys(node)) walk(node[key], depth + 1, key);
+      return;
+    }
+    const depValue = depIdx === undefined ? undefined : derefTagValue(values?.[depIdx]?.value, actions);
+    if (depValue !== undefined && !COIL_REF_REGEX.test(String(depValue))) {
+      const child = node[String(depValue)];
+      if (child) walk(child, depth + 1, parentKey);
+      return;
+    }
+    for (const key of Object.keys(node)) walk(node[key], depth + 1, parentKey);
+  };
+  walk(options, 0, undefined);
+
+  return parentOptions.filter((option) => valid.has(String(option.value)));
+};
+
 export interface ResolvedInputInfo {
   facets: ContextStepFacet[];
   icons?: string[];
