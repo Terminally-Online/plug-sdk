@@ -3,6 +3,7 @@
     "version": "0.1.1",
     "license": "MIT",
     "description": "Production-ready React Query SDK for Gusher protocol interactions",
+    "homepage": "https://plug.to",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
