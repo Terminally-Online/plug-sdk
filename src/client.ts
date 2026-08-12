@@ -40,6 +40,11 @@ import {
 } from "./lib/schemas/transaction";
 import { SeriesQueryParams, SeriesResponseSchema } from "./lib/schemas/series";
 import { ColorQueryParams, ColorResponseSchema } from "./lib/schemas/cdn";
+import type {
+  AuthNonceResponse,
+  AuthSessionResponse,
+  AuthTokenResponse,
+} from "./lib/schemas/auth";
 import { StreamManager, type StreamListener } from "./client/manager";
 import { StreamConnection } from "./client/stream";
 import { applyJsonPatch } from "./client/patch";
@@ -79,26 +84,44 @@ const computeDisplayPath = (
   return scope === "root" ? path : `/address/{address}${path}`;
 };
 
-export interface AuthNonceResponse {
-  data: {
-    nonce: string;
-    expires_at: string;
-  };
-}
+const RESOLUTION_BASE = "https://plug.invalid";
 
-export interface AuthTokenResponse {
-  data: {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-  };
-}
+const normalizeCallPath = (
+  path: string,
+): { pathname: string; search: URLSearchParams } => {
+  const trimmed = path.trim();
 
-export interface AuthSessionResponse {
-  data: {
-    address: string;
-  };
-}
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    throw new PlugSDKError(
+      `Path must be rooted at the Plug API, like "/address/0x…/activity" — received "${path}".`,
+      "INVALID_PATH",
+    );
+  }
+
+  if (trimmed.split(/[/?#]/).includes("..")) {
+    throw new PlugSDKError(
+      `Path may not traverse outside the Plug API — received "${path}".`,
+      "INVALID_PATH",
+    );
+  }
+
+  const resolved = new URL(trimmed, RESOLUTION_BASE);
+  if (resolved.origin !== RESOLUTION_BASE) {
+    throw new PlugSDKError(
+      `Path may not name a host — received "${path}".`,
+      "INVALID_PATH",
+    );
+  }
+
+  return { pathname: resolved.pathname, search: resolved.searchParams };
+};
+
+export type RawCallParams = {
+  method: EndpointMethod;
+  path: string;
+  query?: Record<string, unknown>;
+  body?: unknown;
+};
 
 export class PlugClient {
   private config: ResolvedPlugSDKConfig;
@@ -251,6 +274,34 @@ export class PlugClient {
       throw new PlugNetworkError(`Network request failed: ${String(error)}`);
     }
   }
+
+  // Issues an arbitrary request against the configured Plug API and returns the
+  // response body exactly as the server sent it. Auth, timeout, retry, and 401
+  // rotation are shared with every typed endpoint; response validation is not,
+  // because the point of this surface is to see what the API actually returns
+  // rather than what a schema expects.
+  //
+  // The path is resolved against baseUrl and can never leave it: absolute URLs,
+  // protocol-relative paths, and traversal segments are rejected rather than
+  // normalized, so the host is a boundary and not a default.
+  readonly call = async <T = unknown>({
+    method,
+    path,
+    query,
+    body,
+  }: RawCallParams): Promise<T> => {
+    const { pathname, search } = normalizeCallPath(path);
+    if (query) {
+      buildQueryParams(query).forEach((value, key) => search.append(key, value));
+    }
+    const serialized = search.toString();
+    const endpoint = serialized ? `${pathname}?${serialized}` : pathname;
+
+    return this.request<T>(endpoint, {
+      method,
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+  };
 
   private shouldRetry(error: unknown): boolean {
     if (error instanceof PlugNetworkError) {

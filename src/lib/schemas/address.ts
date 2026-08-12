@@ -5,6 +5,9 @@ import { createResponseSchema } from "./response";
 
 export type RecursiveStringMap = { [key: string]: string | RecursiveStringMap };
 
+export const ATTRIBUTES_DESCRIPTION =
+  "Arbitrarily nested map holding everything indexed about this entry beyond its identity: section keys group leaves, and a leaf key may carry a display format after a colon (`value:money`, `rate:percentage`). Sections seen in production include `net` (`value`, `rate`, `balance`), `supply`, `borrow`, `stake`, `lp`, `position`, `portfolio`, `media` (`image`, `animation`, `html`), and `address` (`backfill_percentage`); the set is protocol-defined and open, so read what is present rather than assuming a fixed shape. Every yield, rate, health, and position number the product displays lives here and nowhere else — an entry with no `attributes` is not an entry without those numbers, it is an entry whose attributes were not requested or not indexed.";
+
 export const RecursiveStringMapSchema: z.ZodType<RecursiveStringMap> = z.lazy(
   () => z.record(z.string(), z.union([z.string(), RecursiveStringMapSchema])),
 );
@@ -154,7 +157,9 @@ export const AddressRelationshipSchema = z.object({
   status: z.string().optional(),
   icon: z.string().optional(),
   description: z.string().optional(),
-  attributes: RecursiveStringMapSchema.optional(),
+  attributes: RecursiveStringMapSchema.optional().describe(
+    ATTRIBUTES_DESCRIPTION,
+  ),
   balance: AddressBalanceSchema.optional(),
 });
 
@@ -169,7 +174,9 @@ export const AddressSchema = z.object({
   icon: z.string().optional(),
   description: z.string().optional(),
   status: z.string().optional(),
-  attributes: RecursiveStringMapSchema.optional(),
+  attributes: RecursiveStringMapSchema.optional().describe(
+    ATTRIBUTES_DESCRIPTION,
+  ),
   balance: AddressBalanceSchema.optional(),
   price: AddressPriceSchema.optional(),
   relationships: z

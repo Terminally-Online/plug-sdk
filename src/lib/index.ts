@@ -5,6 +5,7 @@ export * from "./functions/portfolio";
 export * from "./schemas/action";
 export * from "./schemas/activity";
 export * from "./schemas/address";
+export * from "./schemas/auth";
 export * from "./schemas/chain";
 export * from "./schemas/context";
 export * from "./schemas/option";
