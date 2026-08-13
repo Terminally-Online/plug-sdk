@@ -238,6 +238,11 @@ export const SimulationOutputSchema = z.object({
   action: z.string(),
   slots: z.array(SimulationSlotSchema),
 });
+export const SimulationExclusionSchema = z.object({
+  step: z.number(),
+  cause: z.string(),
+});
+
 export const SimulationSchema = z.object({
   verdict: z.string().nullish(),
   reason: z.string().nullish(),
@@ -245,6 +250,7 @@ export const SimulationSchema = z.object({
   gas_used: z.number().nullish(),
   block_number: z.number().nullish(),
   outputs: z.array(SimulationOutputSchema).nullish(),
+  exclusions: z.array(SimulationExclusionSchema).nullish(),
 });
 
 export const IRInstructionSchema = z.object({
@@ -316,6 +322,7 @@ export type IntentEdge = z.infer<typeof IntentEdgeSchema>;
 export type IntentGraph = z.infer<typeof IntentGraphSchema>;
 export type SimulationSlot = z.infer<typeof SimulationSlotSchema>;
 export type SimulationOutput = z.infer<typeof SimulationOutputSchema>;
+export type SimulationExclusion = z.infer<typeof SimulationExclusionSchema>;
 export type Simulation = z.infer<typeof SimulationSchema>;
 export type CompileTransactionData = z.infer<
   typeof CompileTransactionDataSchema
