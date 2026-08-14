@@ -236,6 +236,7 @@ export const SimulationSlotSchema = z.object({
 export const SimulationOutputSchema = z.object({
   action_index: z.number(),
   action: z.string(),
+  assumed: z.boolean().nullish(),
   slots: z.array(SimulationSlotSchema),
 });
 export const SimulationExclusionSchema = z.object({
