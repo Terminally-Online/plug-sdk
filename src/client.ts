@@ -26,6 +26,7 @@ import {
 } from "./lib/schemas/activity";
 import {
   CompileTransactionQueryParams,
+  CompileTransactionResponse,
   CompileTransactionResponseSchema,
   CreateTransactionQueryParams,
   CreateTransactionResponseSchema,
@@ -152,6 +153,14 @@ export class PlugClient {
       path: "/auth/refresh",
       displayPath: "/auth/refresh",
       summary: "Rotate the access and refresh token pair.",
+    });
+    this.registerEndpoint({
+      method: "PUT",
+      scope: "root",
+      path: "/transaction/",
+      displayPath: "/transaction/",
+      summary:
+        "Compile a draft action sequence into coil options, output manifests, and simulated slot values.",
     });
     this.registerEndpoint({
       method: "GET",
@@ -553,15 +562,22 @@ export class PlugClient {
         "Build and persist transaction calldata ready for signing and submission.",
     },
   )(CreateTransactionResponseSchema);
-  readonly compileTransaction = this.endpoint<CompileTransactionQueryParams>(
-    "/transaction/",
-    "PUT",
-    {
-      scope: "root",
-      summary:
-        "Compile a draft action sequence into coil options, output manifests, and simulated slot values.",
-    },
-  )(CompileTransactionResponseSchema);
+  // The compile input rides the request body: a large draft serializes to a
+  // multi-kilobyte query string, and query strings are headers — HTTP/3
+  // through the edge stalls indefinitely on oversized ones.
+  readonly compileTransaction = async (
+    params: CompileTransactionQueryParams,
+  ): Promise<CompileTransactionResponse> => {
+    const data = await this.request<unknown>("/transaction/", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    return this.createValidator(CompileTransactionResponseSchema)(
+      data,
+      "/transaction/",
+    );
+  };
 
   readonly submitTransaction = async ({
     address,
