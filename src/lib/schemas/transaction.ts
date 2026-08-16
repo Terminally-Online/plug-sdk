@@ -220,6 +220,12 @@ export const CompileTransactionInputSchema = z.object({
   steps: z
     .record(z.number(), CompileTransactionStepSchema)
     .describe("The steps/actions to compile."),
+  overrides: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      "Debugger hypotheses: step.path keys naming read outputs, 0x-hex raw slot values. The program re-executes with each read pinned to its stated value; a draft carrying overrides projects fully and is never signable.",
+    ),
 });
 export const CompileTransactionQueryParamsSchema = z.object({
   input: CompileTransactionInputSchema,
