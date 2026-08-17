@@ -353,33 +353,33 @@ describe("PositionsResponseSchema", () => {
   it("carries the optional portfolio aggregate headers", () => {
     const parsed = PositionsResponseSchema.parse({
       headers: {
-        deposit_value: "12345.678901",
-        debt_value: "1000",
-        net_worth: "11345.678901",
-        net_carry_apy: "3.42",
-        claimable_value: "12.5",
+        "deposit_value:money": "12345.678901",
+        "debt_value:money": "1000",
+        "net_worth:money": "11345.678901",
+        "net_carry_apy:percent": "3.42",
+        "claimable_value:money": "12.5",
       },
       data: [],
     });
     expect(parsed.headers).toEqual({
-      deposit_value: "12345.678901",
-      debt_value: "1000",
-      net_worth: "11345.678901",
-      net_carry_apy: "3.42",
-      claimable_value: "12.5",
+      "deposit_value:money": "12345.678901",
+      "debt_value:money": "1000",
+      "net_worth:money": "11345.678901",
+      "net_carry_apy:percent": "3.42",
+      "claimable_value:money": "12.5",
     });
   });
 
   it("accepts absent headers and per-field omission", () => {
     expect(PositionsResponseSchema.parse({ data: [] }).headers).toBeUndefined();
     const sparse = PositionsResponseSchema.parse({
-      headers: { net_worth: "0" },
+      headers: { "net_worth:money": "0" },
       data: [],
     });
-    expect(sparse.headers).toEqual({ net_worth: "0" });
+    expect(sparse.headers).toEqual({ "net_worth:money": "0" });
     expect(
       PositionsResponseSchema.safeParse({
-        headers: { net_carry_apy: 3.42 },
+        headers: { "net_carry_apy:percent": 3.42 },
         data: [],
       }).success,
     ).toBe(false);

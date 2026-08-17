@@ -289,23 +289,25 @@ export const PositionsQueryParamsSchema = z.object({
 });
 
 export const PortfolioHeadersSchema = z.object({
-  deposit_value: z
+  "deposit_value:money": z
     .string()
     .optional()
     .describe("Total USD value deposited across all positions."),
-  debt_value: z
+  "debt_value:money": z
     .string()
     .optional()
     .describe("Total USD value borrowed across all positions."),
-  net_worth: z
+  "net_worth:money": z
     .string()
     .optional()
     .describe("Deposit value minus debt value in USD."),
-  net_carry_apy: z
+  "net_carry_apy:percent": z
     .string()
     .optional()
-    .describe("Net carry APY across all positions, in percent units."),
-  claimable_value: z
+    .describe(
+      "Net carry APY across all positions as a 0..1 fraction — the unit every :percent value carries; the display layer scales ×100.",
+    ),
+  "claimable_value:money": z
     .string()
     .optional()
     .describe("Total USD value of unclaimed rewards."),

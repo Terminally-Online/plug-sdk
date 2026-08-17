@@ -35,11 +35,11 @@ export const parsePortfolioHeaders = (
   if (!headers) return null;
 
   const values: PortfolioHeaderValues = {
-    depositValue: parseNumericText(headers.deposit_value),
-    debtValue: parseNumericText(headers.debt_value),
-    netWorth: parseNumericText(headers.net_worth),
-    netCarryApy: parseNumericText(headers.net_carry_apy),
-    claimableValue: parseNumericText(headers.claimable_value),
+    depositValue: parseNumericText(headers["deposit_value:money"]),
+    debtValue: parseNumericText(headers["debt_value:money"]),
+    netWorth: parseNumericText(headers["net_worth:money"]),
+    netCarryApy: parseNumericText(headers["net_carry_apy:percent"]),
+    claimableValue: parseNumericText(headers["claimable_value:money"]),
   };
 
   const hasValue = Object.values(values).some((value) => value !== null);

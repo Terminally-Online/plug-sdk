@@ -19,18 +19,18 @@ describe("parsePortfolioHeaders", () => {
   it("returns null when no header carries a usable value", () => {
     expect(parsePortfolioHeaders({})).toBeNull();
     expect(
-      parsePortfolioHeaders({ deposit_value: "", net_carry_apy: "nope" }),
+      parsePortfolioHeaders({ "deposit_value:money": "", "net_carry_apy:percent": "nope" }),
     ).toBeNull();
   });
 
   it("parses every NUMERIC-as-TEXT header", () => {
     expect(
       parsePortfolioHeaders({
-        deposit_value: "12345.678901",
-        debt_value: "1000",
-        net_worth: "11345.678901",
-        net_carry_apy: "3.42",
-        claimable_value: "12.5",
+        "deposit_value:money": "12345.678901",
+        "debt_value:money": "1000",
+        "net_worth:money": "11345.678901",
+        "net_carry_apy:percent": "3.42",
+        "claimable_value:money": "12.5",
       }),
     ).toEqual({
       depositValue: 12345.678901,
@@ -44,9 +44,9 @@ describe("parsePortfolioHeaders", () => {
   it("nulls unparseable fields while keeping the rest", () => {
     expect(
       parsePortfolioHeaders({
-        deposit_value: "100",
-        debt_value: "not-a-number",
-        net_carry_apy: "",
+        "deposit_value:money": "100",
+        "debt_value:money": "not-a-number",
+        "net_carry_apy:percent": "",
       }),
     ).toEqual({
       depositValue: 100,
@@ -59,7 +59,7 @@ describe("parsePortfolioHeaders", () => {
 
   it("keeps zero and negative values", () => {
     expect(
-      parsePortfolioHeaders({ net_worth: "0", net_carry_apy: "-1.25" }),
+      parsePortfolioHeaders({ "net_worth:money": "0", "net_carry_apy:percent": "-1.25" }),
     ).toMatchObject({ netWorth: 0, netCarryApy: -1.25 });
   });
 });
