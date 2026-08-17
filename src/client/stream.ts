@@ -12,6 +12,10 @@ export type StreamCallbacks = {
 
 export type StreamConnectionOptions = StreamCallbacks & {
     url: string
+    // The HTTP method the resource is served under — the positions stream
+    // rides PUT, so the dial must match the route or it lands on a sibling
+    // resource with the wrong shape.
+    method?: 'GET' | 'PUT' | 'POST' | 'DELETE'
     getAuthHeaders: () => Promise<Record<string, string>>
     onTokenExpired?: () => Promise<string | null>
     validateSnapshot?: (data: unknown) => unknown
@@ -97,13 +101,14 @@ export class StreamConnection {
         }
         if (this.lastEventId) headers['Last-Event-ID'] = this.lastEventId
 
-        let response = await fetch(this.options.url, { headers, signal: controller.signal })
+        const method = this.options.method ?? 'GET'
+        let response = await fetch(this.options.url, { method, headers, signal: controller.signal })
 
         if (response.status === 401 && this.options.onTokenExpired) {
             const token = await this.options.onTokenExpired()
             if (token) {
                 headers.Authorization = `Bearer ${token}`
-                response = await fetch(this.options.url, { headers, signal: controller.signal })
+                response = await fetch(this.options.url, { method, headers, signal: controller.signal })
             }
         }
 
@@ -135,7 +140,24 @@ export class StreamConnection {
         switch (message.event) {
             case 'snapshot': {
                 const data = safeJsonParse(message.data)
-                this.options.onSnapshot(this.options.validateSnapshot ? this.options.validateSnapshot(data) : data)
+                if (!this.options.validateSnapshot) {
+                    this.options.onSnapshot(data)
+                    return
+                }
+                // A snapshot that fails its schema is a wiring bug — the
+                // resource behind this URL does not produce the shape this
+                // subscriber expects — and no reconnect can heal it.
+                // Retrying spins a silent reconnect loop forever; fail the
+                // stream instead so the mismatch surfaces immediately.
+                let validated: unknown
+                try {
+                    validated = this.options.validateSnapshot(data)
+                } catch (error) {
+                    throw new FatalStreamError(
+                        `stream snapshot failed validation: ${error instanceof Error ? error.message : String(error)}`
+                    )
+                }
+                this.options.onSnapshot(validated)
                 return
             }
             case 'patch': {

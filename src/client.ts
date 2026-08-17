@@ -370,7 +370,7 @@ export class PlugClient {
         options?: EndpointOptions<z.infer<TSchema>>,
       ): Promise<z.infer<TSchema>> | (() => void) {
         if (options) {
-          return self.openStream(path, params, responseSchema, scope, options);
+          return self.openStream(path, params, responseSchema, scope, options, method);
         }
         return self.requestEndpoint(
           path,
@@ -417,6 +417,7 @@ export class PlugClient {
     responseSchema: TSchema,
     scope: EndpointScope,
     options: EndpointOptions<z.infer<TSchema>>,
+    method: EndpointMethod = "GET",
   ): () => void {
     const url = this.resolveUrl(path, params, scope);
     const validate = this.createValidator(responseSchema);
@@ -435,10 +436,11 @@ export class PlugClient {
     };
 
     return this.streamManager.subscribe(
-      url,
+      `${method} ${url}`,
       (callbacks) =>
         new StreamConnection({
           url,
+          method,
           getAuthHeaders: () => this.getAuthHeaders(),
           onTokenExpired: this.config.auth?.onTokenExpired,
           validateSnapshot: (data) => validate(data, url),
