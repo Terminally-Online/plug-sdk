@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 
 import {
   keepPreviousData,
@@ -6,6 +6,7 @@ import {
   RefetchOptions,
   useInfiniteQuery,
   useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 
 import { usePlugContext } from "../../provider";
@@ -27,6 +28,11 @@ import { ContextActionOption, resolveInputOptions } from "../../lib/schemas/opti
 // DefaultOptionPageSize so the first page the shape call returns lines up exactly
 // with where focused pagination resumes.
 export const OPTION_PAGE_SIZE = 50;
+
+// How long a fetched context stays fresh. Options change on indexer cadence,
+// not keystrokes — within this window a hover prefetch fully absorbs the
+// focus fetch and re-opening a part costs nothing.
+const CONTEXT_STALE_TIME_MS = 30_000;
 
 // Reshapes the focused input's chosen dependency values into the (requires, values)
 // pair resolveInputOptions walks, so a dependent (tree) input resolves to the same
@@ -122,6 +128,7 @@ export function useContext(
     queryFn: () =>
       client.getContext({ address: address!, filter, search, intent, draft, selections }),
     enabled: enabled && !!address,
+    staleTime: CONTEXT_STALE_TIME_MS,
     placeholderData: search || draft ? keepPreviousData : undefined,
   });
 
@@ -260,4 +267,24 @@ export function useContext(
     protocols: raw,
     actions,
   };
+}
+
+// useContextPrefetch returns a prefetch for the exact query useContext mounts
+// with the same arguments — warm it on hover and the focus fetch is a cache
+// read. In-flight prefetches dedupe with the mount fetch, so even a click that
+// beats the response pays only the remaining latency.
+export function useContextPrefetch() {
+  const { client } = usePlugContext();
+  const queryClient = useQueryClient();
+  return useCallback(
+    (address: string, options: Omit<UseContextOptions, "enabled" | "stream"> = {}) => {
+      const { filter, search, intent, draft, selections } = options;
+      return queryClient.prefetchQuery({
+        queryKey: QueryKeys.context(address, filter, search, intent, draft, selections),
+        queryFn: () => client.getContext({ address, filter, search, intent, draft, selections }),
+        staleTime: CONTEXT_STALE_TIME_MS,
+      });
+    },
+    [client, queryClient],
+  );
 }
