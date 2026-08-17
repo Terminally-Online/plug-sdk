@@ -147,6 +147,7 @@ export const InputReferenceSchema = z.object({
   hidden: z.boolean().optional(),
   coil: z.boolean().optional(),
   tags: InputTagsSchema.optional(),
+  selectorTags: z.record(z.string(), InputTagsSchema).optional(),
 });
 
 export const ParsedSentenceSchema = z.object({

@@ -37,6 +37,8 @@ export const ContextStepOutputInfoSchema = z.object({
   offset: z.number(),
   dynamic: z.boolean().optional(),
   tags: InputTagsSchema.optional(),
+  selectorTags: z.record(z.string(), InputTagsSchema).optional(),
+  selectorInput: z.number().optional(),
 });
 
 export const ContextStepSentenceSchema = z.object({
