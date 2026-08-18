@@ -9,8 +9,7 @@
     "types": "dist/index.d.ts",
     "repository": {
         "type": "git",
-        "url": "https://github.com/terminally-online/plug.git",
-        "directory": "packages/sdk"
+        "url": "https://github.com/Terminally-Online/plug-sdk.git"
     },
     "keywords": [
         "gusher",
@@ -61,5 +60,8 @@
     },
     "publishConfig": {
         "access": "public"
+    },
+    "bugs": {
+        "url": "https://github.com/Terminally-Online/plug-sdk/issues"
     }
 }
