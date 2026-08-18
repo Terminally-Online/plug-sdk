@@ -23,6 +23,14 @@ import {
   ContextStep,
 } from "../../lib/schemas/context";
 import { ContextActionOption, resolveInputOptions } from "../../lib/schemas/option";
+import {
+  ContextInputDeclarative,
+  ContextInputImperative,
+  DeclarativeContext,
+  ImperativeContext,
+  resolveDeclarativeParts,
+  resolveImperativeParts,
+} from "../../input/parts";
 
 // The page size every focused option list is windowed to — mirrors gusher's
 // DefaultOptionPageSize so the first page the shape call returns lines up exactly
@@ -56,6 +64,21 @@ function selectionsToValues(selections?: Record<string, string>): {
 export type UseContextOptions = Omit<ContextQueryParams, "address" | "limit"> & {
   enabled?: boolean;
   stream?: boolean;
+  // The entity the user launched from (a token, a position) — typed structurally
+  // so the whole object passes as-is; only its attributes are read, and its
+  // standard-tagged entries pin the matching inputs in the `parts` projection.
+  // The draft stays the caller's: build it from `parts` (skipping meta-sourced
+  // values, which would feed the projection its own output) and pass it as ever.
+  launch?: ImperativeContext["launch"];
+  // Opt-in lone-survivor fill in the `parts` projection: a narrowed list with
+  // exactly one option resolves to it (source: "only") and cascades through
+  // resolution. Off by default — the lone survivor is then the app's signal.
+  cascadeFills?: boolean;
+  // Declarative resolution context: the action's stored values (raw — tag and
+  // coil refs preserved) and the plug's actions they dereference against.
+  // Read only by the declarative `parts` projection; never on the wire.
+  values?: DeclarativeContext["values"];
+  actions?: DeclarativeContext["actions"];
 };
 
 type UseContextBase = {
@@ -71,11 +94,27 @@ type UseContextBase = {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => Promise<unknown>;
+  // When the shape last arrived (epoch ms, 0 before the first response) — the
+  // query's own timestamp, surfaced for freshness display (a quote's age).
+  dataUpdatedAt: number;
 };
 
 export type UseContextActionResult = UseContextBase & {
   protocol: ContextProtocol | undefined;
   action: ContextStep | undefined;
+  // The action's inputs projected against the launch context — resolved values
+  // with provenance, narrowed option lists, canonical chosen matches. Always an
+  // array on this overload; empty until the shape arrives (or while the filter
+  // holds empty strings — a frame mounted before its launch exists).
+  parts: ContextInputImperative[];
+};
+
+export type UseContextDeclarativeResult = UseContextBase & {
+  protocol: ContextProtocol | undefined;
+  action: ContextStep | undefined;
+  // The sentence projected against the plug's stored state: text runs and
+  // input slots carrying the same resolution facts as imperative parts.
+  parts: ContextInputDeclarative[];
 };
 
 export type UseContextProtocolResult = UseContextBase & {
@@ -99,10 +138,20 @@ type FilterWithProtocol = {
   filter: { protocol: string } & Omit<ContextFilter, "protocol">;
 };
 
+// Intent discriminates the parts projection, mirroring what it already means on
+// the wire: imperative (acting now — holdings-scoped options, launch pins) gets
+// flat imperative parts; declarative (composing — the full universe, stored
+// values) gets sentence segments. Omitted intent defaults declarative, matching
+// the server.
+export function useContext(
+  address: string | undefined,
+  options: UseContextOptions & FilterWithAction & { intent: "imperative" },
+): UseContextActionResult;
+
 export function useContext(
   address: string | undefined,
   options: UseContextOptions & FilterWithAction,
-): UseContextActionResult;
+): UseContextDeclarativeResult;
 
 export function useContext(
   address: string | undefined,
@@ -117,9 +166,13 @@ export function useContext(
 export function useContext(
   address: string | undefined,
   options: UseContextOptions = {},
-): UseContextActionResult | UseContextProtocolResult | UseContextFullResult {
+):
+  | UseContextActionResult
+  | UseContextDeclarativeResult
+  | UseContextProtocolResult
+  | UseContextFullResult {
   const { client } = usePlugContext();
-  const { filter, search, intent, draft, selections, input, enabled = true, stream = false } = options;
+  const { filter, search, intent, draft, selections, input, enabled = true, stream = false, launch, cascadeFills, values, actions: declarativeActions } = options;
 
   const queryKey = QueryKeys.context(address || "", filter, search, intent, draft, selections);
 
@@ -222,6 +275,21 @@ export function useContext(
     return cloned;
   }, [shape, pages.data, input, filter?.protocol, filter?.action, selections, coiled]);
 
+  // The imperative projection — computed downstream of the pagination merge so
+  // the focused part's fetched pages are already in its options. Stateless: a
+  // pure function of the fetched shape and the caller's inputs.
+  const step =
+    filter?.protocol && filter?.action
+      ? raw?.[filter.protocol]?.actions?.[filter.action]
+      : undefined;
+  const parts = useMemo(
+    () =>
+      intent === "imperative"
+        ? resolveImperativeParts(step, { launch, address, selections, cascadeFills })
+        : resolveDeclarativeParts(step, { values, actions: declarativeActions, cascadeFills }),
+    [step, intent, launch, address, selections, cascadeFills, values, declarativeActions],
+  );
+
   const base: UseContextBase = {
     isLoading: result.isLoading,
     isFetching: result.isFetching,
@@ -230,18 +298,26 @@ export function useContext(
     hasNextPage: input != null && (pages.data?.pages.length ? pages.hasNextPage : focusedFull),
     isFetchingNextPage: pages.isFetchingNextPage,
     fetchNextPage: pages.fetchNextPage,
+    dataUpdatedAt: result.dataUpdatedAt,
   };
 
-  if (filter?.protocol && filter?.action) {
+  // Branch on key presence, not truthiness, mirroring the overload types: a
+  // filter carrying empty strings (a frame mounted before its launch exists) is
+  // still the action shape — its data resolves to undefined and `parts` to [] —
+  // never a silent fall-through to a differently-shaped result.
+  if (filter?.protocol !== undefined && filter?.action !== undefined) {
     const protocol = raw?.[filter.protocol];
+    // The cast pairs with the intent-discriminated overloads above: the memo's
+    // union collapses to the arm the caller's intent literal selected.
     return {
       ...base,
       protocol,
       action: protocol?.actions?.[filter.action],
-    };
+      parts,
+    } as UseContextActionResult | UseContextDeclarativeResult;
   }
 
-  if (filter?.protocol) {
+  if (filter?.protocol !== undefined) {
     const protocol = raw?.[filter.protocol];
     return {
       ...base,
