@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { SeriesEntry } from "../schemas/series";
 import {
   parsePortfolioHeaders,
   type PortfolioPoint,
@@ -87,7 +88,7 @@ describe("toPortfolioPoints", () => {
   });
 
   it("drops entries without a parseable portfolio value", () => {
-    const series = [
+    const series: SeriesEntry[] = [
       { timestamp: 100, portfolio: { value: "10" } },
       { timestamp: 200 },
       { timestamp: 300, portfolio: {} },

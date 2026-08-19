@@ -5,7 +5,7 @@ import { createResponseSchema } from "./response"
 
 export const SeriesEntrySchema = z
 	.object({ timestamp: z.number() })
-	.catchall(z.union([z.string(), RecursiveStringMapSchema]))
+	.catchall(z.union([z.string(), z.number(), RecursiveStringMapSchema]))
 
 export const SeriesSchema = z.array(SeriesEntrySchema)
 
