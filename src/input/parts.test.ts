@@ -228,6 +228,13 @@ describe("resolveDeclarativeParts", () => {
     "1": { "0xaaa": [{ label: "M1", value: "0xm1" }], "0xbbb": [{ label: "M2", value: "0xm2" }] },
   };
 
+  it("renders a slot-less sentence as its text", () => {
+    const action = withInputs([], {}, "End block");
+    const parts = resolveDeclarativeParts(action, { values: [] });
+    expect(parts.map((part) => part.kind)).toEqual(["text"]);
+    expect(parts).toHaveLength(1);
+  });
+
   it("interleaves text and input slots carrying resolution facts", () => {
     const action = withInputs(
       [token(), market([0])],

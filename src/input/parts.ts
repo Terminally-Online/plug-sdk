@@ -321,8 +321,11 @@ export const resolveDeclarativeParts = (
   action: ContextStep | undefined,
   context: DeclarativeContext = {},
 ): ContextInputDeclarative[] => {
-  const inputs = action?.sentence?.inputs;
-  if (!action || !inputs?.length) return [];
+  if (!action) return [];
+  // A slot-less sentence ("End block", "Get solution") is still a sentence:
+  // its template is pure text and must render. Only the input projection is
+  // skipped when there is nothing to project.
+  const inputs = action.sentence?.inputs ?? [];
   const actions = context.actions ?? NO_ACTIONS;
   const knowns = declarativeKnowns(inputs, context);
   const values: ResolvableValues = knowns.map(
