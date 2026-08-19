@@ -19,13 +19,27 @@ export interface SessionStore {
   subscribe?(listener: () => void): () => void;
 }
 
+/**
+ * A store that resolves without awaiting.
+ *
+ * Some callers cannot await: a `visibilitychange` handler reaching for
+ * `sendBeacon` has to read the token in the same tick or the page is gone
+ * before the request is queued. Both stores shipped here are synchronous, and
+ * this type lets those callers see that without asserting it.
+ */
+export interface SyncSessionStore extends SessionStore {
+  read(address: string): StoredSession | null;
+  write(session: StoredSession): void;
+  clear(address?: string): void;
+}
+
 const normalize = (address: string): string => address.toLowerCase();
 
 /**
  * In-process session storage. Sessions live for the lifetime of the process
  * and are never persisted — the correct choice on the server and in tests.
  */
-export const memorySessionStore = (): SessionStore => {
+export const memorySessionStore = (): SyncSessionStore => {
   const sessions = new Map<string, StoredSession>();
   const listeners = new Set<() => void>();
 
@@ -66,7 +80,7 @@ export interface BrowserSessionStoreOptions {
  */
 export const browserSessionStore = (
   options: BrowserSessionStoreOptions = {},
-): SessionStore => {
+): SyncSessionStore => {
   const key = options.key ?? "plug.session";
   const listeners = new Set<() => void>();
 

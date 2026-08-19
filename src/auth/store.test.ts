@@ -109,3 +109,15 @@ describe("browserSessionStore", () => {
     expect(backing.has("plug.session")).toBe(false);
   });
 });
+
+describe("SyncSessionStore", () => {
+  it("resolves reads without awaiting, as sendBeacon callers require", () => {
+    const store = memorySessionStore();
+    store.write(session());
+
+    const read: StoredSession | null = store.read(ADDRESS);
+
+    expect(read).not.toBeInstanceOf(Promise);
+    expect(read?.accessToken).toBe("access");
+  });
+});
