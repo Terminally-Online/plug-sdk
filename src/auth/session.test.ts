@@ -196,3 +196,77 @@ describe("PlugSession", () => {
     expect(await auth.onTokenExpired?.()).toBe("access-initial");
   });
 });
+
+describe("PlugSession.signIn", () => {
+  const NONCE = { data: { nonce: "nonce-1", expires_at: "2026-08-19T13:00:00Z" } };
+
+  it("runs nonce, message, signature, and verify in one call", async () => {
+    const store = memorySessionStore();
+    const getNonce = vi.fn(async () => NONCE);
+    const verify = vi.fn(async () => tokens("initial"));
+    const signMessage = vi.fn(async (_message: string) => "0xsignature");
+    const session = new PlugSession({
+      client: stubClient({ getNonce, verify }),
+      store,
+    });
+
+    const result = await session.signIn({
+      address: ADDRESS,
+      signMessage,
+      domain: "poof.plug.to",
+      uri: "https://poof.plug.to",
+      statement: "Access poof.",
+    });
+
+    expect(getNonce).toHaveBeenCalledTimes(1);
+
+    const signed = signMessage.mock.calls[0][0];
+    expect(signed).toContain("poof.plug.to wants you to sign in");
+    expect(signed).toContain("Nonce: nonce-1");
+    expect(signed).toContain("Access poof.");
+
+    expect(verify).toHaveBeenCalledWith({
+      message: signed,
+      signature: "0xsignature",
+    });
+    expect(result.accessToken).toBe("access-initial");
+    expect(await store.read(ADDRESS)).toMatchObject({
+      accessToken: "access-initial",
+    });
+    expect(session.getActiveAddress()).toBe(ADDRESS.toLowerCase());
+  });
+
+  it("does not persist anything when the wallet rejects the signature", async () => {
+    const store = memorySessionStore();
+    const verify = vi.fn(async () => tokens("initial"));
+    const session = new PlugSession({
+      client: stubClient({ getNonce: vi.fn(async () => NONCE), verify }),
+      store,
+    });
+
+    await expect(
+      session.signIn({
+        address: ADDRESS,
+        signMessage: async () => {
+          throw new Error("user rejected");
+        },
+        domain: "poof.plug.to",
+        uri: "https://poof.plug.to",
+      }),
+    ).rejects.toThrow("user rejected");
+
+    expect(verify).not.toHaveBeenCalled();
+    expect(await store.read(ADDRESS)).toBeNull();
+  });
+
+  it("refuses to guess an origin when there is no page", async () => {
+    const session = new PlugSession({
+      client: stubClient({ getNonce: vi.fn(async () => NONCE) }),
+      store: memorySessionStore(),
+    });
+
+    await expect(
+      session.signIn({ address: ADDRESS, signMessage: async () => "0xsig" }),
+    ).rejects.toThrow(/domain and uri/);
+  });
+});

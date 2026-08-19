@@ -1,6 +1,7 @@
 import { PlugClient } from "../client";
-import { PlugNetworkError } from "../types";
+import { PlugNetworkError, PlugSDKError } from "../types";
 import type { PlugAuthConfig } from "../types";
+import { buildSiweMessage } from "./siwe";
 import { memorySessionStore, type SessionStore, type StoredSession } from "./store";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -26,6 +27,26 @@ export interface AuthenticateParams {
   address: string;
   message: string;
   signature: string;
+}
+
+export interface SignInParams {
+  /** EIP-55 checksummed address, as wallet connectors hand it to you. */
+  address: string;
+  /**
+   * Signs the SIWE message and resolves the hex signature. Injected because
+   * every wallet library spells this differently — wagmi's `signMessageAsync`,
+   * viem's `walletClient.signMessage`, an ethers `Signer`.
+   */
+  signMessage: (message: string) => Promise<string>;
+  /** Defaults to 1. */
+  chainId?: number;
+  statement?: string;
+  /** Defaults to the page's host. Required off the browser. */
+  domain?: string;
+  /** Defaults to the page's origin. Required off the browser. */
+  uri?: string;
+  resources?: string[];
+  expirationTime?: Date;
 }
 
 /**
@@ -95,6 +116,41 @@ export class PlugSession {
     const resolved = this.resolveAddress(address);
     if (!resolved) return null;
     return (await this.store.read(resolved)) ?? null;
+  }
+
+  /**
+   * Signs in: fetches a nonce, builds the SIWE message, has the wallet sign
+   * it, exchanges the signature for a token pair, and persists the session.
+   *
+   * The four steps are the same for every consumer and in this order, so they
+   * belong here rather than in each app. Only `signMessage` differs between
+   * them, which is why it is the one piece passed in.
+   */
+  async signIn(params: SignInParams): Promise<StoredSession> {
+    const domain = params.domain ?? globalThis.location?.host;
+    const uri = params.uri ?? globalThis.location?.origin;
+    if (!domain || !uri) {
+      throw new PlugSDKError(
+        "signIn needs domain and uri when there is no page to read them from",
+        "SIWE_ORIGIN_UNKNOWN",
+      );
+    }
+
+    const nonce = await this.client.getNonce();
+    const message = buildSiweMessage({
+      address: params.address,
+      domain,
+      uri,
+      nonce: nonce.data.nonce,
+      chainId: params.chainId ?? 1,
+      statement: params.statement,
+      resources: params.resources,
+      expirationTime: params.expirationTime,
+    });
+
+    const signature = await params.signMessage(message);
+
+    return this.authenticate({ address: params.address, message, signature });
   }
 
   /** Exchanges a signed SIWE message for a token pair and persists it. */
