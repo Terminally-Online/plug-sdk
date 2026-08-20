@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import { PlugSession } from "./auth/session";
 import { PlugClient } from "./client";
 import { createConfig } from "./config";
 import type { PlugSDKConfig, ResolvedPlugSDKConfig } from "./types";
@@ -14,6 +15,7 @@ import type { PlugSDKConfig, ResolvedPlugSDKConfig } from "./types";
 interface PlugSDKContextValue {
   client: PlugClient;
   config: ResolvedPlugSDKConfig;
+  session: PlugSession | null;
 }
 
 const PlugSDKContext = createContext<PlugSDKContextValue | null>(null);
@@ -22,6 +24,13 @@ interface PlugSDKProviderProps {
   children: React.ReactNode;
   config?: Partial<PlugSDKConfig>;
   queryClient?: QueryClient;
+  /**
+   * Supplies `usePlugAuth` and wires the client's auth for you — passing a
+   * session means you do not also pass `config.auth`. An explicit
+   * `config.auth` still wins, for apps holding tokens somewhere the SDK
+   * cannot reach.
+   */
+  session?: PlugSession;
 }
 
 const createPlugQueryClient = (
@@ -58,8 +67,17 @@ export const PlugSDKProvider: React.FC<PlugSDKProviderProps> = ({
   children,
   config,
   queryClient: userQueryClient,
+  session,
 }) => {
-  const sdk = useMemo(() => createConfig(config), [config]);
+  const sdk = useMemo(
+    () =>
+      createConfig(
+        session && !config?.auth
+          ? { ...config, auth: session.toAuthConfig() }
+          : config,
+      ),
+    [config, session],
+  );
 
   const client = useMemo(() => new PlugClient(sdk), [sdk]);
 
@@ -71,8 +89,9 @@ export const PlugSDKProvider: React.FC<PlugSDKProviderProps> = ({
     () => ({
       client,
       config: sdk,
+      session: session ?? null,
     }),
-    [client, sdk],
+    [client, sdk, session],
   );
 
   return (

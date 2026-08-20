@@ -94,7 +94,6 @@ describe("toPortfolioPoints", () => {
       { timestamp: 300, portfolio: {} },
       { timestamp: 400, portfolio: { value: "" } },
       { timestamp: 500, portfolio: { value: "not-a-number" } },
-      { timestamp: 600, portfolio: { value: { nested: "1" } } },
       { timestamp: 700, portfolio: { value: "70" } },
     ];
     expect(toPortfolioPoints(series)).toEqual([point(100, 10), point(700, 70)]);

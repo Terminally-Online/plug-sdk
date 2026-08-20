@@ -1,3 +1,5 @@
+export * from "./auth/usePlugAuth";
+
 export * from "./activity/useActivity";
 
 export * from "./address/useAddress";

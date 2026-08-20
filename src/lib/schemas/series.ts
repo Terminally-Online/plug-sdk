@@ -1,11 +1,56 @@
 import { z } from "zod"
 
-import { RecursiveStringMapSchema } from "./address"
 import { createResponseSchema } from "./response"
 
+export const SeriesBalanceSchema = z.object({
+	int: z.string().optional().describe("Raw balance in base units."),
+	float: z.string().optional().describe("Balance scaled by the token's decimals."),
+	value: z.string().optional().describe("Balance valued in USD."),
+})
+
+export const SeriesPriceSchema = z.object({
+	open: z.string().optional(),
+	high: z.string().optional(),
+	low: z.string().optional(),
+	close: z.string().optional(),
+	change: z.string().optional(),
+})
+
+export const SeriesPositionSchema = z.object({
+	deposit_value: z.string().optional().describe("USD value supplied to the position."),
+	debt_value: z.string().optional().describe("USD value borrowed against it."),
+	assets: z
+		.record(z.string(), z.record(z.string(), z.string()))
+		.optional()
+		.describe("Per-asset attributes keyed by asset address."),
+})
+
+export const SeriesPortfolioSchema = z.object({
+	value: z.string().optional().describe("Total portfolio value in USD."),
+})
+
+/**
+ * One bucket of history.
+ *
+ * Which attributes a bucket carries is decided by what was asked for, not by
+ * anything in the bucket itself: a portfolio query fills `portfolio`, a
+ * fungible token fills `balance` and `price`, a position fills `balance` and
+ * `position`, and a collection or collectible fills only `balance.int`. The
+ * server resolves that from the entity's standard, so a caller cannot always
+ * know in advance — every group is optional and callers narrow.
+ *
+ * Unknown keys pass through rather than being stripped, so an attribute added
+ * server-side survives the round trip and reaches callers as `unknown`.
+ */
 export const SeriesEntrySchema = z
-	.object({ timestamp: z.number() })
-	.catchall(z.union([z.string(), z.number(), RecursiveStringMapSchema]))
+	.object({
+		timestamp: z.number(),
+		balance: SeriesBalanceSchema.optional(),
+		price: SeriesPriceSchema.optional(),
+		position: SeriesPositionSchema.optional(),
+		portfolio: SeriesPortfolioSchema.optional(),
+	})
+	.passthrough()
 
 export const SeriesSchema = z.array(SeriesEntrySchema)
 

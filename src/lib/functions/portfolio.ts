@@ -1,4 +1,4 @@
-import { PortfolioHeaders, RecursiveStringMap } from "../schemas/address";
+import { PortfolioHeaders } from "../schemas/address";
 import { SeriesEntry } from "../schemas/series";
 
 /**
@@ -57,12 +57,8 @@ export const toPortfolioPoints = (
 
   const points: PortfolioPoint[] = [];
   for (const entry of series) {
-    const portfolio = entry.portfolio as RecursiveStringMap | undefined;
-    const raw =
-      typeof portfolio === "object" && portfolio !== null
-        ? portfolio.value
-        : undefined;
-    if (typeof raw !== "string" || raw === "") continue;
+    const raw = entry.portfolio?.value;
+    if (raw === undefined || raw === "") continue;
     const value = Number(raw);
     if (!Number.isFinite(value)) continue;
     points.push({ time: entry.timestamp, value });
