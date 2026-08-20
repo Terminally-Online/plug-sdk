@@ -114,6 +114,16 @@ export const CreateTransactionInputSchema = z.object({
     .describe(
       "A unix timestamp after which the transaction is no longer valid.",
     ),
+  owner: z
+    .string()
+    .optional()
+    .describe(
+      "The account the draft executes for — a standard:wallet slot filled with \"yourself\" resolves to this address. Absent, the authenticated session's address; absent both, wallet-self slots stay on the executing account.",
+    ),
+  gas_limit: z
+    .number()
+    .optional()
+    .describe("Gas limit recorded on the created transaction."),
   steps: z
     .record(z.number(), CreateTransactionInputStepSchema)
     .describe("The steps/actions to include in the transaction."),
@@ -225,6 +235,18 @@ export const CompileTransactionInputSchema = z.object({
     .optional()
     .describe(
       "Debugger hypotheses: step.path keys naming read outputs, 0x-hex raw slot values. The program re-executes with each read pinned to its stated value; a draft carrying overrides projects fully and is never signable.",
+    ),
+  signature: z
+    .string()
+    .optional()
+    .describe(
+      "The owner's EIP-712 signature over the lowered program. Present on the second lowering pass: with it the response carries the complete wallet_sendCalls batch including the factory createAndExecute call, simulated as the exact batch that will execute. Without it the response carries the typed data to sign.",
+    ),
+  deadline: z
+    .number()
+    .optional()
+    .describe(
+      "Unix seconds for the program deadline. The deadline is part of the signed typed data, so a signed re-simulation must echo the value that was signed — a different deadline is a different program. Absent or zero, the server stamps its default TTL.",
     ),
 });
 export const CompileTransactionQueryParamsSchema = z.object({
