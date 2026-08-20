@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { createResponseSchema } from "./response";
 import { AddressParams } from "./address";
+import { InputTagsSchema } from "../types/sentence";
 
 export const TransactionInputSchema = z.object({
   protocol: z.string(),
@@ -258,7 +259,7 @@ export const SimulationSlotSchema = z.object({
   type: z.any(),
   slot: z.number(),
   path: z.string(),
-  tags: z.array(z.any()).nullish(),
+  tags: InputTagsSchema.nullish(),
   value: z.string().nullish(),
 });
 export const SimulationOutputSchema = z.object({
@@ -316,11 +317,51 @@ export const IntentGraphSchema = z.object({
   edges: z.array(IntentEdgeSchema),
 });
 
+// One call of the wallet_sendCalls batch a signed compile returns — the exact
+// batch the simulation executed, ready to send as-is.
+export const LoweredCallSchema = z.object({
+  to: z.string(),
+  value: z.string(),
+  data: z.string(),
+});
+
+// The signing surface of a compiled draft: the counterfactual account the
+// program executes on, the salt that derives it, the deadline the signature
+// commits to (pass it back as `deadline` when re-compiling with the
+// signature), and the EIP-712 payload for eth_signTypedData_v4.
+export const LoweredProgramSchema = z.object({
+  socket: z.string(),
+  salt: z.string(),
+  deadline: z.number(),
+  typed_data: TypedDataSchema,
+});
+
+// An input the compiled draft leaves unbound for the caller to supply at
+// execution: the declaring step, the name, and the Solidity type.
+export const CompileParameterSchema = z.object({
+  step: z.number(),
+  name: z.string(),
+  type: z.string(),
+});
+
 export const CompileTransactionDataSchema = z.object({
   options: z.array(z.record(z.string(), z.array(CoilOptionSchema))).nullish(),
   outputs: z.array(z.any()).nullish(),
+  parameters: z
+    .array(CompileParameterSchema)
+    .nullish()
+    .describe("Inputs the draft leaves unbound for execution time."),
   graph: IntentGraphSchema.nullish(),
   simulation: SimulationSchema.nullish(),
+  calls: z
+    .array(LoweredCallSchema)
+    .nullish()
+    .describe(
+      "The executable wallet_sendCalls batch. Present only when the request carried the owner's signature and the simulation verdict is executable.",
+    ),
+  program: LoweredProgramSchema.nullish().describe(
+    "The typed data to sign and the account it executes on. Present when the draft is complete and an owner was given; absent once a signature is supplied.",
+  ),
 });
 export const CompileTransactionResponseSchema = createResponseSchema(
   CompileTransactionDataSchema,
@@ -345,6 +386,9 @@ export type CompileTransactionResponse = z.infer<
   typeof CompileTransactionResponseSchema
 >;
 
+export type CompileParameter = z.infer<typeof CompileParameterSchema>;
+export type LoweredCall = z.infer<typeof LoweredCallSchema>;
+export type LoweredProgram = z.infer<typeof LoweredProgramSchema>;
 export type IRInstruction = z.infer<typeof IRInstructionSchema>;
 export type IntentNode = z.infer<typeof IntentNodeSchema>;
 export type IntentEdge = z.infer<typeof IntentEdgeSchema>;
