@@ -6,7 +6,7 @@ import { createResponseSchema } from "./response";
 export type RecursiveStringMap = { [key: string]: string | RecursiveStringMap };
 
 export const ATTRIBUTES_DESCRIPTION =
-  "Arbitrarily nested map holding everything indexed about this entry beyond its identity: section keys group leaves, and a leaf key may carry a display format after a colon (`value:money`, `rate:percentage`). Sections seen in production include `net` (`value`, `rate`, `balance`), `supply`, `borrow`, `stake`, `lp`, `position`, `portfolio`, `media` (`image`, `animation`, `html`), and `address` (`backfill_percentage`); the set is protocol-defined and open, so read what is present rather than assuming a fixed shape. Every yield, rate, health, and position number the product displays lives here and nowhere else — an entry with no `attributes` is not an entry without those numbers, it is an entry whose attributes were not requested or not indexed.";
+  "Arbitrarily nested map holding everything indexed about this entry beyond its identity: section keys group leaves, and a leaf key may carry a display format after a colon (value:money, rate:percentage). Sections seen in production include net (value, rate, balance), supply, borrow, stake, lp, position, portfolio, media (image, animation, html), and address (backfill_percentage); the set is protocol-defined and open, so read what is present rather than assuming a fixed shape. Every yield, rate, health, and position number the product displays lives here and nowhere else: an entry with no attributes is not an entry without those numbers, it is an entry whose attributes were not requested or not indexed.";
 
 export const RecursiveStringMapSchema: z.ZodType<RecursiveStringMap> = z.lazy(
   () => z.record(z.string(), z.union([z.string(), RecursiveStringMapSchema])),
@@ -305,7 +305,7 @@ export const PortfolioHeadersSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Net carry APY across all positions as a 0..1 fraction — the unit every :percent value carries; the display layer scales ×100.",
+      "Net carry APY across all positions as a 0..1 fraction, the unit every :percent value carries; the display layer scales ×100.",
     ),
   "claimable_value:money": z
     .string()

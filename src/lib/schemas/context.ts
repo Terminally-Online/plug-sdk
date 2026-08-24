@@ -130,13 +130,13 @@ export const ContextQueryParamsSchema = z.object({
     .enum(["imperative", "declarative"])
     .optional()
     .describe(
-      "Whether an action's options are scoped to the caller's holdings (imperative — acting now) or the full universe of valid targets (declarative — composing a flow). Defaults to declarative.",
+      "Whether an action's options are scoped to the caller's holdings (imperative, acting now) or the full universe of valid targets (declarative, composing a flow). Defaults to declarative.",
     ),
   input: z
     .number()
     .optional()
     .describe(
-      "The focused input index whose option list is being paginated. Paired with `limit`; the response windows only this input's list.",
+      "The focused input index whose option list is being paginated. Paired with limit; the response windows only this input's list.",
     ),
   selections: z
     .record(z.string())
@@ -148,13 +148,13 @@ export const ContextQueryParamsSchema = z.object({
     .record(z.string())
     .optional()
     .describe(
-      "The full partial assignment — every input the user has filled so far, keyed by input index — so the server can project request-scoped meta (a swap quote, a live max) over the complete in-flight request.",
+      "The full partial assignment, every input the user has filled so far keyed by input index, so the server can project request-scoped meta (a swap quote, a live max) over the complete in-flight request.",
     ),
   limit: z
     .object({ count: z.number(), offset: z.number().optional() })
     .optional()
     .describe(
-      "Page window for the focused input's option list. `count` is the page size; `offset` skips leading entries. Follow `links.next` to advance.",
+      "Page window for the focused input's option list. count is the page size; offset skips leading entries. Follow links.next to advance.",
     ),
 });
 export const ContextResponseSchema = createResponseSchema(ContextSchema);

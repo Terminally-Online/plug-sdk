@@ -119,7 +119,7 @@ export const CreateTransactionInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "The account the draft executes for — a standard:wallet slot filled with \"yourself\" resolves to this address. Absent, the authenticated session's address; absent both, wallet-self slots stay on the executing account.",
+      "The account the draft executes for: a standard:wallet slot filled with \"yourself\" resolves to this address. Absent, the authenticated session's address; absent both, wallet-self slots stay on the executing account.",
     ),
   gas_limit: z
     .number()
@@ -247,7 +247,7 @@ export const CompileTransactionInputSchema = z.object({
     .number()
     .optional()
     .describe(
-      "Unix seconds for the program deadline. The deadline is part of the signed typed data, so a signed re-simulation must echo the value that was signed — a different deadline is a different program. Absent or zero, the server stamps its default TTL.",
+      "Unix seconds for the program deadline. The deadline is part of the signed typed data, so a signed re-simulation must echo the value that was signed; a different deadline is a different program. Absent or zero, the server stamps its default TTL.",
     ),
 });
 export const CompileTransactionQueryParamsSchema = z.object({

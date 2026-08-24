@@ -386,7 +386,7 @@ const ACCEPT_HEADER: ApiParam = {
   type: "string",
   required: true,
   description:
-    "For a typical single-time JSON response, set this to `application/json`. To receive realtime updates through a stream, set this to `text/event-stream`.",
+    "For a typical single-time JSON response, set this to application/json. To receive realtime updates through a stream, set this to text/event-stream.",
   default: "application/json",
   enum: ["application/json", "text/event-stream"],
 };
@@ -414,7 +414,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/",
     summary: "Get address",
     description:
-      "Returns all address level metadata for the provided EVM address including signal-level graph flags.",
+      "Returns everything Plug knows about an address at the identity level: its metadata and the signal flags the indexing graph has raised on it.\n\nThe response is the address as the indexer sees it, not as a wallet does. Graph signals classify what the address is (a contract, a token, a router, a known entity) and how it behaves, derived from indexed history rather than a registry someone maintains by hand. Requesting an address that has never been seen queues it for indexing immediately, so a cold address warms up by being asked about.\n\nReach for it as the first call in any flow that starts from a raw address: resolving what something is before deciding which of the other surfaces to read next.",
     tag: "address",
     pathParams: AddressParamsSchema,
     responseSchema: AddressResponseSchema,
@@ -425,7 +425,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/",
     summary: "Get position(s)",
     description:
-      "Returns all indexed fungible, non-fungible, and non-tokenized positions for the provided address.",
+      "Returns every position an address holds across every protocol Plug indexes: fungible balances, non-fungible holdings, and the non-tokenized positions that never show up in a wallet.\n\nA lending market deposit, an LP range, a staked balance, a vault share: most of what an address is worth has no token in the wallet to prove it. The indexer derives these positions from onchain events and keeps every number a protocol tracks about them, yields, rates, health, value, in the attributes of each entry.\n\nReach for it to render a portfolio, to find the balance a strategy is about to act on, or to answer what is this address actually holding without connecting a wallet or touching a key.",
     tag: "address",
     pathParams: AddressParamsSchema,
     queryParams: PositionsQueryParamsSchema,
@@ -437,7 +437,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/",
     summary: "Get context",
     description:
-      "Returns all the options needed for each action input to build a valid transaction such as tokens, pools, and chains.",
+      "Returns the options every input of an action accepts for this address: the tokens it holds, the pools that exist, the chains it can act on, resolved against the live catalog.\n\nThis is the surface the composer runs on. Send the action sequence being drafted and the response carries a valid option set for each unfilled input, plus request-scoped context such as a swap quote or a live maximum projected over what has been filled so far. The options are already filtered to what would actually compile.\n\nReach for it while building a transaction, once per edit, so the person or agent doing the composing only ever sees choices that work.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     queryParams: ContextQueryParamsSchema,
@@ -449,7 +449,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/activity",
     summary: "Get activity",
     description:
-      "Returns paginated on-chain transaction activity for the provided address, sorted by block number descending.",
+      "Returns the onchain transaction history of an address, paginated and sorted by block number descending.\n\nEach entry is a settled transaction with what it moved: the flows, approvals, and counterparties involved, normalized across every chain Plug indexes rather than raw logs left for the caller to decode.\n\nReach for it to render an activity feed, to reconcile what a strategy actually did against what it was meant to do, or to walk an address's history without running an archive node.",
     tag: "address",
     pathParams: AddressParamsSchema,
     queryParams: GetActivityQueryParamsSchema,
@@ -461,7 +461,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/transaction/",
     summary: "Get transaction(s)",
     description:
-      "Returns all saved Plug transactions associated with the EVM address provided, after considering all applied filters. Use this to list and review existing transaction records, not to compile new calldata.",
+      "Returns the transactions Plug has saved for an address: every intent created through the platform, with its status, schedule, and execution record, narrowed by whatever filters are applied.\n\nThese are Plug's own records, not chain history. A row exists from the moment a transaction is created, tracks its life through scheduling, simulation, submission, and settlement, and keeps the verdict when something fails. Listing is all this surface does.\n\nReach for it to show a user their pending and past transactions or to poll the state of an intent that was submitted earlier. Compiling new calldata belongs to the create step, not here.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     queryParams: GetTransactionsQueryParamsSchema,
@@ -473,7 +473,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/transaction/",
     summary: "Create transaction",
     description:
-      "Constructs and compiles transaction calldata from structured inputs, returning details ready for signing and submission. This is the build step — use GET /transaction to list existing records.",
+      "Constructs and compiles transaction calldata from structured inputs, returning a record ready for signing and submission.\n\nHand it the steps of the transaction as action references with filled inputs and it resolves them through the catalog, compiles the calldata, and persists a transaction row that tracks the intent from here to settlement. The response carries everything a wallet needs to sign.\n\nThis is the build step. Listing existing records is the GET on the same path, and the pure preview that persists nothing is the compile surface.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     queryParams: CreateTransactionQueryParamsSchema,
@@ -485,7 +485,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/history",
     summary: "Get series",
     description:
-      "Returns time-series data for the provided address including price OHLC, balance history, and portfolio value over time.",
+      "Returns time series for an address: price candles, balance history, and portfolio value over time, bucketed for charting.\n\nWhich groups a bucket carries follows what was asked for, so the same surface serves a price chart, a balance sparkline, or a full portfolio curve. Values arrive in the units the display layer expects, with the bucketing already done server side.\n\nReach for it any time a number needs to become a line: charting a holding, showing portfolio drift, or feeding a strategy the recent history of what it manages.",
     tag: "address",
     pathParams: AddressParamsSchema,
     queryParams: SeriesQueryParamsSchema,
@@ -497,7 +497,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/transaction/",
     summary: "Compile transaction",
     description:
-      "Compiles a draft action sequence into coil options, output manifests, and simulated slot values without persisting anything. This is the preview step the composer runs on every edit — it is not bound to a wallet and it never submits.",
+      "Compiles a draft action sequence into coil options, output manifests, and simulated slot values without persisting anything.\n\nThis is the preview step the composer runs on every edit. It is not bound to a wallet, it never submits, and nothing it computes outlives the response: it exists so a draft can be checked against the compiler that will eventually execute it, every keystroke, for free.\n\nReach for it to validate a sequence as it is being written, to learn what each step will output before anything is signed, or to build composer-grade tooling of your own on the same contract the app uses.",
     tag: "transaction",
     queryParams: CompileTransactionQueryParamsSchema,
     responseSchema: CompileTransactionResponseSchema,
@@ -508,7 +508,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/transaction/",
     summary: "Submit transaction",
     description:
-      "Broadcasts a signed intent bundle. The signature must be produced by the owning wallet, so this is the one surface that cannot act on an arbitrary address.",
+      "Broadcasts a signed intent bundle.\n\nThe signature must come from the owning wallet, which makes this the one surface in the API that cannot act on an arbitrary address. Everything before it, reading, composing, compiling, is open; the moment value can move, the wallet is the gate. The submitted program carries its own conditions, so execution happens when they are met, not necessarily when this call returns.\n\nReach for it as the final step of the flow the create and compile surfaces set up: sign what they produced, hand it over, and track the record through the transactions list.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     bodySchema: SubmitTransactionInputSchema,
@@ -521,7 +521,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/transaction/",
     summary: "Cancel transaction",
     description:
-      "Cancels a scheduled or pending intent row owned by the address.",
+      "Cancels a scheduled or pending intent owned by the address.\n\nAn armed intent is a standing order: it will fire whenever its conditions are met, whether or not anyone is watching. Cancelation is how a standing order dies before it fires. Rows that have already settled are history and stay untouched.\n\nReach for it when a strategy is retired, a schedule is no longer wanted, or a pending transaction was a mistake, and confirm the row's status through the transactions list afterward.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     queryParams: CancelTransactionInputSchema,
@@ -534,7 +534,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/chain",
     summary: "Get chain(s)",
     description:
-      "Returns all data for a specific blockchain network including its configuration and metadata.",
+      "Returns the configuration and metadata of every blockchain network Plug indexes and executes on.\n\nEach entry carries what a caller needs to speak to a chain through Plug: its id, its identity, and the platform-level configuration that decides how it is indexed and executed against. The list is the authority on where Plug operates; anything not in it is not supported yet.\n\nReach for it to populate a chain picker, to validate a chain id before composing against it, or to discover what is supported without hardcoding a list that will rot.",
     tag: "chain",
     queryParams: ChainQueryParamsSchema,
     responseSchema: ChainResponseSchema,
@@ -545,7 +545,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/cdn/{encoded_url}/color",
     summary: "Get color",
     description:
-      "Returns the dominant color and a readable text color for a CDN-hosted image, used to theme surfaces around remote assets.",
+      "Returns the dominant color of a hosted image along with a text color that stays readable on top of it.\n\nThe pair is computed once and served from the CDN, so surfaces themed around remote assets, token icons, protocol logos, NFT media, get their palette in one cheap call instead of shipping color extraction to the client.\n\nReach for it whenever UI wraps an image it has never seen: card backgrounds, hover washes, any place the design should take its color from the asset instead of a default.",
     tag: "cdn",
     pathParams: ColorParamsSchema,
     responseSchema: ColorResponseSchema,
@@ -556,7 +556,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/auth/nonce",
     summary: "Get nonce",
     description:
-      "Issues a one-time nonce to embed in a SIWE message. Step one of three in wallet authentication.",
+      "Issues a one-time nonce to embed in a Sign-In with Ethereum message.\n\nThe nonce binds the message the wallet is about to sign to this single authentication attempt, which is what makes a replayed signature worthless. It is step one of three: nonce, verify, refresh.\n\nReach for it at the start of wallet authentication, put the value in the SIWE message, and send the signed result to the verify surface.",
     tag: "auth",
     streaming: false,
     responseSchema: AuthNonceResponseSchema,
@@ -567,7 +567,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/auth/verify",
     summary: "Verify signature",
     description:
-      "Exchanges a signed SIWE message for an access and refresh token pair. Step two of three in wallet authentication.",
+      "Exchanges a signed Sign-In with Ethereum message for an access and refresh token pair.\n\nThe server checks the signature against the message, confirms the nonce is the one it issued, and mints the pair: a short-lived access token that authenticates requests and a refresh token that rotates it. Step two of three in wallet authentication.\n\nReach for it with the output of the wallet's signing prompt, then hold both tokens; the session lives exactly as long as the refresh rotation continues.",
     tag: "auth",
     bodySchema: AuthVerifyBodySchema,
     streaming: false,
@@ -579,7 +579,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/auth/refresh",
     summary: "Refresh token",
     description:
-      "Rotates an expiring access token using its refresh token. Step three of three in wallet authentication.",
+      "Rotates an expiring access token using its refresh token.\n\nAccess tokens are deliberately short-lived; the refresh token is what turns a signature made once into a session that lasts. Each rotation returns a fresh pair, so the caller always holds current credentials without asking the wallet to sign again. Step three of three in wallet authentication.\n\nReach for it just before the access token expires, or on the first rejected request, and replace both stored tokens with what comes back.",
     tag: "auth",
     bodySchema: AuthRefreshBodySchema,
     streaming: false,
@@ -591,7 +591,7 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/auth/session",
     summary: "Get session",
     description:
-      "Resolves the address that the presented access token authenticates.",
+      "Resolves the address that the presented access token authenticates.\n\nIt is the whoami of the API: given nothing but the bearer token, it answers which wallet this session belongs to, which is exactly what a server-side consumer needs to trust a request without re-verifying a signature.\n\nReach for it to restore a session on load, to guard a route, or to confirm a token still lives before doing something that needs it.",
     tag: "auth",
     streaming: false,
     responseSchema: AuthSessionResponseSchema,

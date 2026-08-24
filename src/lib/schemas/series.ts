@@ -77,7 +77,7 @@ export const SeriesTimeSchema = z.object({
 	from: z
 		.number()
 		.optional()
-		.describe("Start unix timestamp. Defaults to 24h before `to`."),
+		.describe("Start unix timestamp. Defaults to 24h before to."),
 	to: z
 		.number()
 		.optional()
