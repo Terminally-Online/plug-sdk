@@ -76,12 +76,19 @@ export const ContextActionSchema = ContextStepSchema.extend({
   action: z.string(),
 });
 
+export const ContextProtocolLinkSchema = z.object({
+  kind: z.string(),
+  url: z.string(),
+});
+
 export const ContextProtocolSchema = z.object({
   name: z.string(),
   symbol: z.string(),
   icon: z.string(),
+  description: z.string().optional(),
   tags: z.array(z.string()),
   chains: z.array(ChainSchema),
+  links: z.array(ContextProtocolLinkSchema).optional(),
   actions: z.record(z.string(), ContextStepSchema).optional(),
 });
 
