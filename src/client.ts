@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import {
   PlugSDKError,
@@ -65,15 +65,15 @@ export interface EndpointMeta {
   path: string;
   displayPath: string;
   summary: string;
-  paramsSchema?: z.ZodSchema;
-  responseSchema?: z.ZodSchema;
+  paramsSchema?: z.ZodType;
+  responseSchema?: z.ZodType;
 }
 
 interface EndpointRegistration {
   scope?: EndpointScope;
   summary: string;
   displayPath?: string;
-  paramsSchema?: z.ZodSchema;
+  paramsSchema?: z.ZodType;
 }
 
 const computeDisplayPath = (
@@ -327,8 +327,12 @@ export class PlugClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private createValidator<T>(schema: z.ZodSchema<T>) {
-    return (data: unknown, url?: string): T => {
+  // Generic over the schema rather than over its output. In Zod 4 a bare
+  // z.ZodType carries an unknown output, so binding T from z.ZodType<T> at the
+  // call site infers unknown and every endpoint's return type collapses;
+  // taking the schema itself and reading z.infer off it keeps the inference.
+  private createValidator<TSchema extends z.ZodType>(schema: TSchema) {
+    return (data: unknown, url?: string): z.infer<TSchema> => {
       const result = schema.safeParse(data);
       if (!result.success) {
         throw new PlugValidationError(
@@ -347,7 +351,7 @@ export class PlugClient {
     registration: EndpointRegistration = { summary: "" },
   ) {
     const scope: EndpointScope = registration.scope ?? "address";
-    return <TSchema extends z.ZodSchema>(responseSchema: TSchema) => {
+    return <TSchema extends z.ZodType>(responseSchema: TSchema) => {
       this.registerEndpoint({
         method,
         scope,
@@ -410,7 +414,7 @@ export class PlugClient {
 
   private openStream<
     TParams extends EndpointParams,
-    TSchema extends z.ZodSchema,
+    TSchema extends z.ZodType,
   >(
     path: string,
     params: TParams,
@@ -452,7 +456,7 @@ export class PlugClient {
 
   private async requestEndpoint<
     TParams extends EndpointParams,
-    TSchema extends z.ZodSchema,
+    TSchema extends z.ZodType,
   >(
     path: string,
     params: TParams,

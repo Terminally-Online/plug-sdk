@@ -1,6 +1,5 @@
 import {
   z,
-  ZodTypeAny,
   ZodObject,
   ZodArray,
   ZodOptional,
@@ -11,7 +10,16 @@ import {
   ZodEnum,
   ZodNumber,
   ZodBoolean,
-} from "zod";
+} from "zod/v4";
+
+// This file walks schema internals, which Zod 4 types as the core $ZodType
+// while _def and .description live on the class-backed ZodType. Every value
+// reached through _def is one of the concrete classes at runtime — the
+// narrowing below is instanceof — so `concrete` states that at the one place
+// the two types meet rather than scattering casts through the walk.
+type ZodTypeAny = z.ZodType;
+
+const concrete = (schema: z.core.$ZodType): ZodTypeAny => schema as ZodTypeAny;
 
 import {
   AddressParamsSchema,
@@ -106,17 +114,17 @@ export interface ApiEndpoint {
 // collapsing to the first member silently deletes.
 const unwrapSchema = (schema: ZodTypeAny): ZodTypeAny => {
   if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
-    return unwrapSchema(schema._def.innerType);
+    return unwrapSchema(concrete(schema._def.innerType));
   }
   if (schema instanceof ZodLazy) {
-    return unwrapSchema(schema._def.getter());
+    return unwrapSchema(concrete(schema._def.getter()));
   }
   return schema;
 };
 
 const unionMembers = (schema: ZodUnion<any>): ZodTypeAny[] =>
-  schema._def.options.filter(
-    (option: ZodTypeAny) => option._def.typeName !== "ZodNull",
+  schema._def.options.map(concrete).filter(
+    (option: ZodTypeAny) => option._def.type !== "null",
   );
 
 // Unions that carry exactly one meaningful member are equivalent to that
@@ -131,17 +139,17 @@ const unwrapToConcrete = (schema: ZodTypeAny): ZodTypeAny => {
 
 const isOptional = (schema: ZodTypeAny): boolean => {
   if (schema instanceof ZodOptional) return true;
-  if (schema instanceof ZodNullable) return isOptional(schema._def.innerType);
+  if (schema instanceof ZodNullable) return isOptional(concrete(schema._def.innerType));
   return false;
 };
 
 const isNullable = (schema: ZodTypeAny): boolean => {
   if (schema instanceof ZodNullable) return true;
-  if (schema instanceof ZodOptional) return isNullable(schema._def.innerType);
-  if (schema instanceof ZodLazy) return isNullable(schema._def.getter());
+  if (schema instanceof ZodOptional) return isNullable(concrete(schema._def.innerType));
+  if (schema instanceof ZodLazy) return isNullable(concrete(schema._def.getter()));
   if (schema instanceof ZodUnion) {
-    return schema._def.options.some(
-      (opt: ZodTypeAny) => opt._def.typeName === "ZodNull",
+    return schema._def.options.map(concrete).some(
+      (opt: ZodTypeAny) => opt._def.type === "null",
     );
   }
   return false;
@@ -157,34 +165,38 @@ export const SELF_TYPE = "self";
 // expanded.
 const getZodTypeName = (schema: ZodTypeAny, lazyDepth: number = 0): string => {
   if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
-    return getZodTypeName(schema._def.innerType, lazyDepth);
+    return getZodTypeName(concrete(schema._def.innerType), lazyDepth);
   }
   if (schema instanceof ZodLazy) {
     if (lazyDepth >= 1) return SELF_TYPE;
-    return getZodTypeName(schema._def.getter(), lazyDepth + 1);
+    return getZodTypeName(concrete(schema._def.getter()), lazyDepth + 1);
   }
 
-  const typeName = schema._def.typeName;
+  // Zod 4 names a schema's kind on _def.type, already lowercase, where v3
+  // carried a "ZodString"-style _def.typeName. The mapping below is the same
+  // one as before against the new spelling; the fallthrough no longer has a
+  // prefix to strip.
+  const typeName = schema._def.type;
 
   switch (typeName) {
-    case "ZodString":
+    case "string":
       return "string";
-    case "ZodNumber":
+    case "number":
       return "integer";
-    case "ZodBoolean":
+    case "boolean":
       return "boolean";
-    case "ZodArray":
+    case "array":
       return "array";
-    case "ZodObject":
+    case "object":
       return "object";
-    case "ZodRecord":
+    case "record":
       return getRecordType(schema as z.ZodRecord<any, any>, lazyDepth);
-    case "ZodUnion":
+    case "union":
       return getUnionType(schema as z.ZodUnion<any>, lazyDepth);
-    case "ZodEnum":
+    case "enum":
       return "string";
     default:
-      return typeName?.replace("Zod", "").toLowerCase() ?? "unknown";
+      return typeName ?? "unknown";
   }
 };
 
@@ -192,8 +204,8 @@ const getRecordType = (
   schema: z.ZodRecord<any, any>,
   lazyDepth: number = 0,
 ): string => {
-  const keyType = getZodTypeName(schema._def.keyType, lazyDepth);
-  const valueType = getZodTypeName(schema._def.valueType, lazyDepth);
+  const keyType = getZodTypeName(concrete(schema._def.keyType), lazyDepth);
+  const valueType = getZodTypeName(concrete(schema._def.valueType), lazyDepth);
   return `Record<${keyType}, ${valueType}>`;
 };
 
@@ -211,7 +223,7 @@ const getUnionType = (
 };
 
 const getDescription = (schema: ZodTypeAny): string | undefined => {
-  return schema._def.description || schema.description;
+  return schema.description;
 };
 
 const getParamType = (schema: ZodTypeAny): "string" | "integer" | "boolean" => {
@@ -219,7 +231,7 @@ const getParamType = (schema: ZodTypeAny): "string" | "integer" | "boolean" => {
   if (unwrapped instanceof ZodNumber) return "integer";
   if (unwrapped instanceof ZodBoolean) return "boolean";
   if (unwrapped instanceof ZodArray) {
-    const innerType = unwrapped._def.type;
+    const innerType = concrete(unwrapped._def.element);
     if (innerType instanceof ZodNumber) return "integer";
     if (innerType instanceof ZodBoolean) return "boolean";
   }
@@ -229,15 +241,15 @@ const getParamType = (schema: ZodTypeAny): "string" | "integer" | "boolean" => {
 const getEnumValues = (schema: ZodTypeAny): string[] | undefined => {
   const unwrapped = unwrapToConcrete(schema);
   if (unwrapped instanceof ZodEnum) {
-    return unwrapped._def.values as string[];
+    return Object.values(unwrapped._def.entries) as string[];
   }
   if (unwrapped instanceof ZodBoolean) {
     return ["true", "false"];
   }
   if (unwrapped instanceof ZodArray) {
-    const innerUnwrapped = unwrapToConcrete(unwrapped._def.type);
+    const innerUnwrapped = unwrapToConcrete(concrete(unwrapped._def.element));
     if (innerUnwrapped instanceof ZodEnum) {
-      return innerUnwrapped._def.values as string[];
+      return Object.values(innerUnwrapped._def.entries) as string[];
     }
   }
   return undefined;
@@ -256,7 +268,7 @@ const flattenParamsFromSchema = (
     return params;
   }
 
-  const shape = unwrapped._def.shape();
+  const shape = unwrapped._def.shape;
 
   for (const [key, value] of Object.entries(shape)) {
     const fieldSchema = value as ZodTypeAny;
@@ -327,7 +339,7 @@ export const zodToSchemaProperty = (
   const unwrapped = unwrapToConcrete(schema);
 
   if (unwrapped instanceof ZodObject) {
-    const shape = unwrapped._def.shape();
+    const shape = unwrapped._def.shape;
     base.properties = Object.entries(shape).map(([key, value]) =>
       zodToSchemaProperty(value as ZodTypeAny, key, depth + 1, nextLazyDepth),
     );
@@ -335,7 +347,7 @@ export const zodToSchemaProperty = (
 
   if (unwrapped instanceof ZodArray) {
     base.items = zodToSchemaProperty(
-      unwrapped._def.type,
+      concrete(unwrapped._def.element),
       "item",
       depth + 1,
       nextLazyDepth,
@@ -348,7 +360,7 @@ export const zodToSchemaProperty = (
   if (unwrapped instanceof ZodRecord) {
     base.properties = [
       zodToSchemaProperty(
-        unwrapped._def.valueType,
+        concrete(unwrapped._def.valueType),
         "value",
         depth + 1,
         nextLazyDepth,
@@ -364,10 +376,10 @@ export const zodToSchemaProperty = (
 // closed sets are reported here.
 const getResponseEnumValues = (schema: ZodTypeAny): string[] | undefined => {
   const unwrapped = unwrapToConcrete(schema);
-  if (unwrapped instanceof ZodEnum) return unwrapped._def.values as string[];
+  if (unwrapped instanceof ZodEnum) return Object.values(unwrapped._def.entries) as string[];
   if (unwrapped instanceof ZodArray) {
-    const inner = unwrapToConcrete(unwrapped._def.type);
-    if (inner instanceof ZodEnum) return inner._def.values as string[];
+    const inner = unwrapToConcrete(concrete(unwrapped._def.element));
+    if (inner instanceof ZodEnum) return Object.values(inner._def.entries) as string[];
   }
   return undefined;
 };
@@ -375,7 +387,7 @@ const getResponseEnumValues = (schema: ZodTypeAny): string[] | undefined => {
 const crossesLazyBoundary = (schema: ZodTypeAny): boolean => {
   if (schema instanceof ZodLazy) return true;
   if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
-    return crossesLazyBoundary(schema._def.innerType);
+    return crossesLazyBoundary(concrete(schema._def.innerType));
   }
   return false;
 };

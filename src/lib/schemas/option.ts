@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // The option model the context endpoint returns for an action's inputs — mirrors
 // gusher's `models.Option`. Identity (label/name/value/icons) and intrinsic token

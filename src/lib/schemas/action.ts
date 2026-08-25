@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // Action references a protocol action by its protocol/action pair — the same key
 // the context endpoint exposes actions under. Mirrors gusher's `models.Action`. A

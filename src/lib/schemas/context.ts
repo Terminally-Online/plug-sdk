@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { createResponseSchema } from "./response";
 import { ChainSchema } from "./chain";
@@ -121,7 +121,7 @@ export const ContextFilterSchema = z.object({
 export const ContextQueryParamsSchema = z.object({
   filter: ContextFilterSchema.optional(),
   search: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .optional()
     .describe(
       "Search within the returned options by input index of an action sentence. This is helpful when letting users refine the options shown for a specific action input such as tokens, vaults or liquidity pools.",
@@ -139,13 +139,13 @@ export const ContextQueryParamsSchema = z.object({
       "The focused input index whose option list is being paginated. Paired with limit; the response windows only this input's list.",
     ),
   selections: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .optional()
     .describe(
       "Values already chosen for the focused input's dependency inputs, keyed by input index, so a dependent list (e.g. a market that hangs off a chosen token) windows against its parent.",
     ),
   draft: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .optional()
     .describe(
       "The full partial assignment, every input the user has filled so far keyed by input index, so the server can project request-scoped meta (a swap quote, a live max) over the complete in-flight request.",

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { createResponseSchema } from "./response";
 import { AddressParams } from "./address";

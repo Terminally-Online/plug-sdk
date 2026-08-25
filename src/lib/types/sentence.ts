@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { EvmTypeSchema } from "./evm";
 
 export const ConstantTypeSchema = z.object({

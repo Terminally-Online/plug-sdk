@@ -252,7 +252,10 @@ export function useContext(
   // client projection is only the pre-fetch preview); a literal one is its
   // shape-call first page plus the pages that resume after it. Cloned so the
   // cached shape is never mutated.
-  const raw = useMemo(() => {
+  // Annotated rather than inferred: every arm returns the context shape the
+  // schema already guarantees, and letting the union of them be inferred loses
+  // the value type of the record so consumers see unknown.
+  const raw = useMemo<Context | undefined>(() => {
     if (!shape || input == null || !filter?.protocol || !filter?.action) return shape;
     const extra: ContextActionOption[] = [];
     for (const page of pages.data?.pages ?? []) {

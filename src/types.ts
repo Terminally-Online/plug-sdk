@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from "zod/v4"
 
 export interface PlugAuthConfig {
     getAccessToken: () => Promise<string | null>
@@ -33,7 +33,7 @@ export class PlugSDKError extends Error {
 }
 
 export class PlugValidationError extends PlugSDKError {
-    constructor(message: string, public validationErrors: z.ZodIssue[]) {
+    constructor(message: string, public validationErrors: z.core.$ZodIssue[]) {
         super(message, 'VALIDATION_ERROR')
         this.name = 'PlugValidationError'
     }
