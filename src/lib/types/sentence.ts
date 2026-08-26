@@ -80,12 +80,19 @@ export const UnionTypeSchema = z.object({
   types: z.array(InputTypeSchema),
 });
 
+export const DecimalAnchorSchema = z.object({
+  address: z.string().optional(),
+  slot: z.number().optional(),
+});
+
 export const InputTagSchema = z.object({
   kind: z.string(),
   value: z.string().optional(),
   qualifiers: z.array(z.string()).optional(),
   dynamic: z.boolean().optional(),
   reference: z.number().optional(),
+  anchors: z.array(DecimalAnchorSchema).optional(),
+  floor: z.number().optional(),
 });
 
 export const InputTagsSchema = z.array(InputTagSchema);
@@ -156,6 +163,7 @@ export const ParsedSentenceSchema = z.object({
   inputs: z.array(InputReferenceSchema),
 });
 
+export type DecimalAnchor = z.infer<typeof DecimalAnchorSchema>;
 export type InputTag = z.infer<typeof InputTagSchema>;
 export type InputTags = z.infer<typeof InputTagsSchema>;
 export type ConstantType = z.infer<typeof ConstantTypeSchema>;
