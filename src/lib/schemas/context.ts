@@ -9,6 +9,12 @@ import { InputReferenceSchema, InputTagsSchema } from "../types/sentence";
 export const ContextStepAttributesSchema = z.object({
   "is:user_specific": z.boolean().optional(),
   "is:unlisted": z.boolean().optional(),
+  "opens:callback": z
+    .boolean()
+    .optional()
+    .describe(
+      "The action opens a callback body (a flash loan) the author's own End closes, on the same frame stack as conditionals and witnesses.",
+    ),
 });
 
 export interface IOutputTypeElement {
