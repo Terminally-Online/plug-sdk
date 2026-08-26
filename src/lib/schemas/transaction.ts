@@ -271,6 +271,7 @@ export const SimulationOutputSchema = z.object({
 export const SimulationExclusionSchema = z.object({
   step: z.number(),
   cause: z.string(),
+  parameter: z.number().nullish(),
 });
 
 export const SimulationSchema = z.object({
