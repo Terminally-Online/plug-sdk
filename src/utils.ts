@@ -1,7 +1,12 @@
+// A slot carries a chain of the slots it is chosen against — `{1=>2=>3<pool>}`
+// goes three deep in the live library — and an index may be marked derived
+// with a leading `~`. Only the index nearest the name addresses the values, so
+// the whole prefix is skipped; reading a single `n=>` leaves every deeper slot
+// unmatched and printed raw.
 export const transformSentence = (sentence: string): string => {
-    return sentence.replace(/\{(\d+)(?:=>(\d+))?<([^>:]+)(?::[^>]+)?>\}/g, (_, index1, index2, content) => {
+    return sentence.replace(/\{(?:~?\d+=>)*~?(\d+)<([^>:]+)(?::[^>]+)?>\}/g, (_, index, content) => {
         const name = content.split(':')[0]
-        return name || `{${index2 || index1}}`
+        return name || `{${index}}`
     })
 }
 

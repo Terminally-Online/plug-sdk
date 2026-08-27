@@ -22,6 +22,15 @@ describe("transformSentence", () => {
     expect(transformSentence("Value {0=>2<>}")).toBe("Value {0=>2<>}");
   });
 
+  it("should handle a chain of redirect indices", () => {
+    expect(transformSentence("Get price on {0=>1=>2<pair:address>}")).toBe("Get price on pair");
+  });
+
+  it("should handle a derived index, alone and at the end of a chain", () => {
+    expect(transformSentence("At least {~3<min_out:uint256>}")).toBe("At least min_out");
+    expect(transformSentence("At least {1=>~9<min_out:uint256>}")).toBe("At least min_out");
+  });
+
   it("should handle multiple placeholders", () => {
     expect(transformSentence("Swap {0<amount:uint256>} of {1<token:address>}")).toBe(
       "Swap amount of token",
