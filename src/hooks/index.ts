@@ -7,7 +7,7 @@ export * from "./address/useContext";
 export * from "./address/usePositions";
 export * from "./address/useSeries";
 
-export * from "./chain/useChain";
+export * from "./chain/useChains";
 
 export * from "./transaction/useCompile";
 export * from "./transaction/useGetTransaction";

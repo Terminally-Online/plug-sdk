@@ -12,6 +12,7 @@ export const ChainSchema = z.object({
   icon: z.string().url(),
   external: ExternalSchema,
   block_time: z.number(),
+  warming: z.boolean().optional(),
 });
 
 export const ChainFilterSchema = z.object({
@@ -21,7 +22,7 @@ export const ChainFilterSchema = z.object({
 export const ChainQueryParamsSchema = z.object({
   filter: ChainFilterSchema.optional(),
 });
-export const ChainResponseSchema = createResponseSchema(ChainSchema);
+export const ChainResponseSchema = createResponseSchema(z.array(ChainSchema));
 
 export type Chain = z.infer<typeof ChainSchema>;
 export type ChainQueryParams = z.infer<typeof ChainQueryParamsSchema>;

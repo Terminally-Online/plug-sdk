@@ -109,6 +109,6 @@ export const chain = async (
 ) => {
   return queryClient.prefetchQuery({
     queryKey: QueryKeys.chain(options?.filter),
-    queryFn: () => client.getChain({ filter: options?.filter } as any),
+    queryFn: () => client.getChains({ filter: options?.filter } as any),
   });
 };

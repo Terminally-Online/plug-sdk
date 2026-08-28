@@ -4,18 +4,18 @@ import { usePlugContext } from "../../provider";
 import { QueryKeys } from "../../config";
 import { ChainQueryParams } from "../../lib/schemas/chain";
 
-export interface UseChainOptions {
+export interface UseChainsOptions {
   enabled?: boolean;
   filter?: ChainQueryParams["filter"];
 }
 
-export function useChain(options: UseChainOptions = {}) {
+export function useChains(options: UseChainsOptions = {}) {
   const { client } = usePlugContext();
   const { filter, enabled = true } = options;
 
   const result = useQuery({
     queryKey: QueryKeys.chain(filter),
-    queryFn: () => client.getChain({ filter } as any),
+    queryFn: () => client.getChains({ filter } as any),
     enabled: enabled,
   });
 

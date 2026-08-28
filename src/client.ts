@@ -520,7 +520,7 @@ export class PlugClient {
 
   // -- Data endpoints --
 
-  readonly getChain = this.endpoint<ChainQueryParams>("/chain", "GET", {
+  readonly getChains = this.endpoint<ChainQueryParams>("/chain", "GET", {
     scope: "root",
     summary: "List supported chains with metadata and protocol coverage.",
   })(ChainResponseSchema);
