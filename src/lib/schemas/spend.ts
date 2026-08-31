@@ -1,9 +1,9 @@
 import { InputReference, TagKind } from "../types/sentence";
 import { ContextActionOption } from "./option";
 
-// A "max" affordance fills an amount field with a referenced token option's full
-// held balance. The token option carries the ceiling first-class — `max` is the exact
-// base-units literal, `decimals` scales it — so there's no parallel sentinel type.
+// A spend-tagged amount fills one-click with the referenced asset option's full
+// held balance. The option carries the ceiling first-class — `max` is the exact
+// base-units literal, `decimals` scales it — so there's no parallel type.
 
 // formatBaseUnits renders an integer base-units string as a human decimal, scaled
 // by `decimals` with trailing fractional zeros trimmed. Dependency-free so the SDK
@@ -21,11 +21,11 @@ const formatBaseUnits = (value: string, decimals: number): string => {
   return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
 };
 
-// sentinelAmount is the human max a token option fills into a referenced amount
-// field. `max` is exact base units (the displayed balance is rounded, so the client
-// scales to full precision), applied through `decimals`. undefined when the option
-// carries no max.
-export const sentinelAmount = (
+// optionMaxAmount is the human max an asset option fills into a spend-tagged
+// amount field. `max` is exact base units (the displayed balance is rounded, so the
+// client scales to full precision), applied through `decimals`. undefined when the
+// option carries no max.
+export const optionMaxAmount = (
   option: ContextActionOption,
 ): string | undefined => {
   if (!option.max) return undefined;
@@ -34,11 +34,11 @@ export const sentinelAmount = (
   return formatBaseUnits(option.max, option.decimals);
 };
 
-// readInputSentinels resolves the token options an input's sentinel tags reference,
-// keeping those that carry a max. Each sentinel-kind tag points (via `reference`) at
-// an upstream input; `optionFor` supplies that input's chosen option (the token,
-// which now carries `max`/`decimals` first-class). Empty when none apply.
-export const readInputSentinels = (
+// readInputSpends resolves the asset options an input's spend tags reference,
+// keeping those that carry a max. A spend tag names (via its value) the input
+// holding the asset the amount spends; `optionFor` supplies that input's chosen
+// option, which carries `max`/`decimals` first-class. Empty when none apply.
+export const readInputSpends = (
   input: InputReference | undefined,
   optionFor: (referenceIndex: number) => ContextActionOption | undefined,
 ): ContextActionOption[] => {
@@ -47,10 +47,11 @@ export const readInputSentinels = (
 
   const options: ContextActionOption[] = [];
   for (const tag of tags) {
-    if (tag.kind !== TagKind.Sentinel) continue;
-    if (typeof tag.reference !== "number") continue;
+    if (tag.kind !== TagKind.Spend) continue;
+    const reference = Number(tag.value);
+    if (!Number.isInteger(reference)) continue;
 
-    const option = optionFor(tag.reference);
+    const option = optionFor(reference);
     if (option?.max) options.push(option);
   }
   return options;

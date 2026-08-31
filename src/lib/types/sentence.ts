@@ -108,7 +108,7 @@ export const TagKind = {
   Constraint: "constraint",
   Format: "format",
   Coerce: "coerce",
-  Sentinel: "sentinel",
+  Spend: "spend",
 } as const;
 export type TagKind = (typeof TagKind)[keyof typeof TagKind];
 
@@ -138,12 +138,6 @@ export const WalletVariant = {
 } as const;
 export type WalletVariant = (typeof WalletVariant)[keyof typeof WalletVariant];
 
-// Sentinel is the `value` of a TagKind.Sentinel tag — a one-click literal an amount
-// input can offer (Max today).
-export const Sentinel = {
-  Max: "max",
-} as const;
-export type Sentinel = (typeof Sentinel)[keyof typeof Sentinel];
 
 export const InputReferenceSchema = z.object({
   name: z.string().optional(),

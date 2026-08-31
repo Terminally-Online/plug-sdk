@@ -9,7 +9,7 @@ export * from "./schemas/auth";
 export * from "./schemas/chain";
 export * from "./schemas/context";
 export * from "./schemas/option";
-export * from "./schemas/sentinel";
+export * from "./schemas/spend";
 export * from "./schemas/external";
 export * from "./schemas/response";
 export * from "./schemas/cdn";
