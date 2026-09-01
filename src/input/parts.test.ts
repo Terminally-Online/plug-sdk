@@ -52,10 +52,10 @@ const wallet = (qualifier: "self" | "external"): InputReference => ({
 const amount = (): InputReference => ({ name: "amount", type: "uint256" });
 
 describe("resolveImperativeParts", () => {
-  it("pins a launch attribute onto the input declaring its standard", () => {
+  it("pins a launch value onto the input it names", () => {
     const action = withInputs([token(), amount()]);
     const parts = resolveImperativeParts(action, {
-      launch: { attributes: { standard: { token: "0xaaa" } } },
+      pins: { "0": "0xaaa" },
     });
     expect(parts[0].value).toBe("0xaaa");
     expect(parts[0].source).toBe(PartSource.Pinned);
@@ -66,7 +66,7 @@ describe("resolveImperativeParts", () => {
   it("prefers the caller's commit over a pin", () => {
     const action = withInputs([token()]);
     const parts = resolveImperativeParts(action, {
-      launch: { attributes: { standard: { token: "0xaaa" } } },
+      pins: { "0": "0xaaa" },
       selections: { "0": "0xbbb" },
     });
     expect(parts[0].value).toBe("0xbbb");
@@ -81,13 +81,14 @@ describe("resolveImperativeParts", () => {
     expect(parts[1].value).toBeUndefined();
   });
 
-  it("consumes a standard on the first input it pins", () => {
+  it("pins by index, never by tag: a second token slot stays open", () => {
     const action = withInputs([token(), token()]);
     const parts = resolveImperativeParts(action, {
-      launch: { attributes: { standard: { token: "0xaaa" } } },
+      pins: { "1": "0xaaa" },
     });
-    expect(parts[0].value).toBe("0xaaa");
-    expect(parts[1].value).toBeUndefined();
+    expect(parts[0].value).toBeUndefined();
+    expect(parts[1].value).toBe("0xaaa");
+    expect(parts[1].source).toBe(PartSource.Pinned);
   });
 
   it("never fills a lone surviving option", () => {
@@ -104,7 +105,7 @@ describe("resolveImperativeParts", () => {
       options: { "0": [{ label: "A", value: "0xaabb" }] },
     });
     const parts = resolveImperativeParts(action, {
-      launch: { attributes: { standard: { token: "0xAaBb" } } },
+      pins: { "0": "0xAaBb" },
     });
     expect(parts[0].chosen?.label).toBe("A");
   });
@@ -120,7 +121,7 @@ describe("resolveImperativeParts", () => {
       },
     });
     const parts = resolveImperativeParts(action, {
-      launch: { attributes: { standard: { token: "0xaaa" } } },
+      pins: { "0": "0xaaa" },
     });
     expect(parts[1].options?.map((option) => option.label)).toEqual(["M1"]);
   });
@@ -136,7 +137,7 @@ describe("resolveImperativeParts", () => {
       },
     });
     const parts = resolveImperativeParts(action, {
-      launch: { attributes: { standard: { market: "0xM1" } } },
+      pins: { "1": "0xM1" },
     });
     expect(parts[0].options?.map((option) => option.label)).toEqual(["A"]);
     expect(parts[1].value).toBe("0xM1");
@@ -203,7 +204,7 @@ describe("cascadeFills", () => {
       },
     });
     const parts = resolveImperativeParts(action, {
-      launch: { attributes: { standard: { market: "0xm1" } } },
+      pins: { "1": "0xm1" },
       cascadeFills: true,
     });
     expect(parts[0].value).toBe("0xaaa");

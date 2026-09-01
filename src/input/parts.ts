@@ -1,4 +1,3 @@
-import { attr, RecursiveStringMap } from "../lib/schemas/address";
 import { ContextStep, Meta } from "../lib/schemas/context";
 import {
   ContextActionOption,
@@ -8,7 +7,7 @@ import {
   ResolvableValues,
   resolveInputOptions,
 } from "../lib/schemas/option";
-import { InputReference, TagKind, WalletVariant } from "../lib/types/sentence";
+import { InputReference, WalletVariant } from "../lib/types/sentence";
 import { walletVariant } from "./input";
 import { parseTemplate } from "./template";
 
@@ -16,7 +15,7 @@ import { parseTemplate } from "./template";
 // caller already knows into render-ready parts. One shared pass — precedence,
 // narrowing in both directions, canonical matching, optional cascading fills —
 // behind two adapters that differ only in where known values come from:
-// imperative (a launch entity's pinned attributes, the session address, the
+// imperative (the launch's server-authored pins, the session address, the
 // user's commits) and declarative (a plug's stored values, with tag/coil refs
 // dereferenced against its other actions). Pure functions: the useContext hook
 // owns the query state and calls in; nothing here fetches, times, or decides.
@@ -25,7 +24,7 @@ import { parseTemplate } from "./template";
 // stays with the app.
 
 // PartSource is the provenance of a part's resolved value. `pinned` arrived via
-// the launch attributes, `self` from the session address, `only` from an opt-in
+// the launch pins, `self` from the session address, `only` from an opt-in
 // lone-survivor fill (cascadeFills), `meta` from a server prefill. `selected` is
 // whatever the caller's own context supplied — its commits on the imperative
 // side, the plug's stored values on the declarative one; the two passes are
@@ -71,9 +70,10 @@ export type ContextInputDeclarative =
   | ({ kind: "input" } & ContextInputImperative);
 
 export type ImperativeContext = {
-  // The entity the user launched from — typed structurally so a whole
-  // token/position object passes as-is; only its attributes are read.
-  launch?: { attributes?: RecursiveStringMap };
+  // The inputs the launch already fills, keyed by input index — the `pins` the
+  // server authored on the action reference the user clicked (a token pins
+  // itself into the token slot, a position its market into the market slot).
+  pins?: Record<string, string>;
   // The session address; resolves standard:wallet:self slots.
   address?: string;
   // The user's commits, keyed by input index (the hook's wire `selections`).
@@ -110,28 +110,17 @@ const chosenOf = (
 ): ContextActionOption | undefined =>
   options?.find((option) => canonical(option.value) === canonical(value));
 
-// The standard an input declares (standard:token, standard:market, …), matched
-// against the launch attributes' `standard` section by base value. Qualifier
-// subsumption (token:atoken ↔ token) is deliberately not applied yet — both
-// sides of the imperative join are authored by gusher in agreement today, and
-// that upgrade ships separately with its own table of gusher's cases.
-const standardOf = (input: InputReference): string | undefined =>
-  input.tags?.find((tag) => tag.kind === TagKind.Standard)?.value;
-
 type Known = { value: string; source: PartSource };
 
 // Imperative pass 1 — commit everything the session and the launch already
 // know, in precedence order per input: the caller's commit, the self wallet
-// slot, the value the launch pinned by standard. Pins land before any option
-// resolution so a pinned dependent can narrow its parents. A standard is
-// consumed by the first input it pins so one attribute never fans out across
-// slots. An external wallet slot is never filled here — the user must choose.
+// slot, the launch pin. Pins land before any option resolution so a pinned
+// dependent can narrow its parents. An external wallet slot is never filled
+// here — the user must choose.
 const imperativeKnowns = (
   inputs: InputReference[],
-  { launch, address, selections }: ImperativeContext,
+  { pins, address, selections }: ImperativeContext,
 ): (Known | undefined)[] => {
-  const standards = new Map(attr.entries(launch?.attributes, "standard"));
-  const used = new Set<string>();
   const knowns: (Known | undefined)[] = [];
   for (let index = 0; index < inputs.length; index++) {
     const input = inputs[index];
@@ -144,12 +133,9 @@ const imperativeKnowns = (
       if (address) knowns[index] = { value: address, source: PartSource.Self };
       continue;
     }
-    const standard = standardOf(input);
-    if (standard === undefined || used.has(standard)) continue;
-    const pinned = standards.get(standard);
-    if (pinned !== undefined) {
+    const pinned = pins?.[String(index)];
+    if (pinned !== undefined && pinned !== "") {
       knowns[index] = { value: pinned, source: PartSource.Pinned };
-      used.add(standard);
     }
   }
   return knowns;
@@ -290,8 +276,8 @@ const projectInput = (
   return { index, input, options, value, source, chosen };
 };
 
-// Projects an action's shape against the launch context into parts. Knowns
-// thread through resolution so a pinned dependent narrows its parents; a
+// Projects an action's shape against the launch pins and the session into
+// parts. Knowns thread through resolution so a pinned dependent narrows its parents; a
 // server meta prefill fills the display gap on a part but never threads into
 // resolution — it is the projection's output, not its input.
 export const resolveImperativeParts = (

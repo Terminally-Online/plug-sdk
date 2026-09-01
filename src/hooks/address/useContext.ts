@@ -42,6 +42,25 @@ export const OPTION_PAGE_SIZE = 50;
 // focus fetch and re-opening a part costs nothing.
 const CONTEXT_STALE_TIME_MS = 30_000;
 
+// The wire's selections: the launch pins with the user's commits over them, so
+// the server prunes to the frame as it stands and a user who re-picks a pinned
+// slot is heard. Undefined when neither carries anything, keeping the query key
+// stable for frames with nothing chosen.
+function mergeSelections(
+  pins?: Record<string, string>,
+  commits?: Record<string, string>,
+): Record<string, string> | undefined {
+  if (!pins && !commits) return undefined;
+  const merged: Record<string, string> = {};
+  for (const [index, value] of Object.entries(pins ?? {})) {
+    if (value !== "") merged[index] = value;
+  }
+  for (const [index, value] of Object.entries(commits ?? {})) {
+    if (value !== "") merged[index] = value;
+  }
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
 // Reshapes the focused input's chosen dependency values into the (requires, values)
 // pair resolveInputOptions walks, so a dependent (tree) input resolves to the same
 // subtree the server windowed.
@@ -64,12 +83,14 @@ function selectionsToValues(selections?: Record<string, string>): {
 export type UseContextOptions = Omit<ContextQueryParams, "address" | "limit"> & {
   enabled?: boolean;
   stream?: boolean;
-  // The entity the user launched from (a token, a position) — typed structurally
-  // so the whole object passes as-is; only its attributes are read, and its
-  // standard-tagged entries pin the matching inputs in the `parts` projection.
-  // The draft stays the caller's: build it from `parts` (skipping meta-sourced
-  // values, which would feed the projection its own output) and pass it as ever.
-  launch?: ImperativeContext["launch"];
+  // The inputs the launch already fills — the `pins` the server authored on the
+  // action reference the user clicked. They ride the wire as selections so the
+  // server computes only the frame that remains, and resolve in the `parts`
+  // projection as source "pinned". The user's own `selections` win over a pin
+  // at the same index. The draft stays the caller's: build it from `parts`
+  // (skipping meta-sourced values, which would feed the projection its own
+  // output) and pass it as ever.
+  pins?: ImperativeContext["pins"];
   // Opt-in lone-survivor fill in the `parts` projection: a narrowed list with
   // exactly one option resolves to it (source: "only") and cascades through
   // resolution. Off by default — the lone survivor is then the app's signal.
@@ -102,7 +123,7 @@ type UseContextBase = {
 export type UseContextActionResult = UseContextBase & {
   protocol: ContextProtocol | undefined;
   action: ContextStep | undefined;
-  // The action's inputs projected against the launch context — resolved values
+  // The action's inputs projected against the launch pins — resolved values
   // with provenance, narrowed option lists, canonical chosen matches. Always an
   // array on this overload; empty until the shape arrives (or while the filter
   // holds empty strings — a frame mounted before its launch exists).
@@ -172,7 +193,10 @@ export function useContext(
   | UseContextProtocolResult
   | UseContextFullResult {
   const { client } = usePlugContext();
-  const { filter, search, intent, draft, selections, input, enabled = true, stream = false, launch, cascadeFills, values, actions: declarativeActions } = options;
+  const { filter, search, intent, draft, selections: commits, input, enabled = true, stream = false, pins, cascadeFills, values, actions: declarativeActions } = options;
+
+  // What the server sees as chosen: the launch pins under the user's commits.
+  const selections = useMemo(() => mergeSelections(pins, commits), [pins, commits]);
 
   const queryKey = QueryKeys.context(address || "", filter, search, intent, draft, selections);
 
@@ -288,9 +312,9 @@ export function useContext(
   const parts = useMemo(
     () =>
       intent === "imperative"
-        ? resolveImperativeParts(step, { launch, address, selections, cascadeFills })
+        ? resolveImperativeParts(step, { pins, address, selections: commits, cascadeFills })
         : resolveDeclarativeParts(step, { values, actions: declarativeActions, cascadeFills }),
-    [step, intent, launch, address, selections, cascadeFills, values, declarativeActions],
+    [step, intent, pins, address, commits, cascadeFills, values, declarativeActions],
   );
 
   const base: UseContextBase = {
@@ -357,7 +381,8 @@ export function useContextPrefetch() {
   const queryClient = useQueryClient();
   return useCallback(
     (address: string, options: Omit<UseContextOptions, "enabled" | "stream"> = {}) => {
-      const { filter, search, intent, draft, selections } = options;
+      const { filter, search, intent, draft, pins, selections: commits } = options;
+      const selections = mergeSelections(pins, commits);
       return queryClient.prefetchQuery({
         queryKey: QueryKeys.context(address, filter, search, intent, draft, selections),
         queryFn: () => client.getContext({ address, filter, search, intent, draft, selections }),
