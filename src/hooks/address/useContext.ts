@@ -309,12 +309,17 @@ export function useContext(
     filter?.protocol && filter?.action
       ? raw?.[filter.protocol]?.actions?.[filter.action]
       : undefined;
+  // The inputs the caller is searching never cascade: the searched shape is
+  // narrowed by a term, not settled by the engine, and filling its survivor
+  // would resolve the input being searched — and, with the unsearched shape
+  // still cached, flip the pick between the two shapes every render.
+  const searched = useMemo(() => Object.keys(search ?? {}), [search]);
   const parts = useMemo(
     () =>
       intent === "imperative"
-        ? resolveImperativeParts(step, { pins, address, selections: commits, cascadeFills })
-        : resolveDeclarativeParts(step, { values, actions: declarativeActions, cascadeFills }),
-    [step, intent, pins, address, commits, cascadeFills, values, declarativeActions],
+        ? resolveImperativeParts(step, { pins, address, selections: commits, cascadeFills, searched })
+        : resolveDeclarativeParts(step, { values, actions: declarativeActions, cascadeFills, searched }),
+    [step, intent, pins, address, commits, cascadeFills, searched, values, declarativeActions],
   );
 
   const base: UseContextBase = {

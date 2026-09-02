@@ -83,6 +83,12 @@ export type ImperativeContext = {
   // downstream lists narrow against it and may cascade into further fills.
   // Off by default — without it the lone survivor is the app's signal.
   cascadeFills?: boolean;
+  // Inputs whose option list is currently narrowed by the user's search
+  // term, keyed by input index. A search-narrowed list is never a cascade
+  // candidate: its lone survivor is what the user typed toward, not what the
+  // engine settled, and filling it would resolve the very input being
+  // searched out from under the search.
+  searched?: Iterable<string>;
 };
 
 export type DeclarativeContext = {
@@ -94,6 +100,8 @@ export type DeclarativeContext = {
   actions?: ResolvableActions;
   // Same opt-in as the imperative form; shared pass, shared semantics.
   cascadeFills?: boolean;
+  // Same exclusion as the imperative form: a searched input never cascades.
+  searched?: Iterable<string>;
 };
 
 const NO_ACTIONS: ResolvableActions = [];
@@ -205,9 +213,11 @@ const applyCascadeFills = (
   knowns: (Known | undefined)[],
   values: ResolvableValues,
   actions: ResolvableActions,
+  searched: Set<string>,
 ): void => {
   for (let index = 0; index < inputs.length; index++) {
     if (knowns[index] !== undefined) continue;
+    if (searched.has(String(index))) continue;
     const input = inputs[index];
     if (walletVariant(input) !== undefined) continue;
     const options = narrowThroughDependents(
@@ -291,7 +301,7 @@ export const resolveImperativeParts = (
     (known) => known && { value: known.value },
   );
   if (context.cascadeFills) {
-    applyCascadeFills(action, inputs, knowns, values, NO_ACTIONS);
+    applyCascadeFills(action, inputs, knowns, values, NO_ACTIONS, new Set(context.searched));
   }
   return inputs.map((_, index) =>
     projectInput(action, inputs, index, knowns, values, NO_ACTIONS),
@@ -318,7 +328,7 @@ export const resolveDeclarativeParts = (
     (known) => known && { value: known.value },
   );
   if (context.cascadeFills) {
-    applyCascadeFills(action, inputs, knowns, values, actions);
+    applyCascadeFills(action, inputs, knowns, values, actions, new Set(context.searched));
   }
   return parseTemplate(action.sentence.template).flatMap(
     (segment): ContextInputDeclarative[] => {

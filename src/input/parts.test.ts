@@ -211,6 +211,22 @@ describe("cascadeFills", () => {
     expect(parts[0].source).toBe(PartSource.Only);
   });
 
+  it("never fills an input the caller is searching, even narrowed to one", () => {
+    const action = withInputs([token(), market([0])], {
+      options: {
+        "0": [{ label: "A", value: "0xaaa" }],
+        "1": { "0xaaa": [{ label: "Prime", value: "0xm2" }] },
+      },
+    });
+    const parts = resolveImperativeParts(action, {
+      cascadeFills: true,
+      searched: ["1"],
+    });
+    expect(parts[0].source).toBe(PartSource.Only);
+    expect(parts[1].value).toBeUndefined();
+    expect(parts[1].options).toHaveLength(1);
+  });
+
   it("never fills a wallet slot, even with a single suggestion", () => {
     const action = withInputs([wallet("external")], {
       options: { "0": [{ label: "Yourself", value: "0xme" }] },
