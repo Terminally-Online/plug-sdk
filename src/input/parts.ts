@@ -8,7 +8,7 @@ import {
   resolveInputOptions,
 } from "../lib/schemas/option";
 import { InputReference, WalletVariant } from "../lib/types/sentence";
-import { walletVariant } from "./input";
+import { isNumberType, walletVariant } from "./input";
 import { parseTemplate } from "./template";
 
 // The resolution engine: projects an action's shape response against what the
@@ -203,6 +203,8 @@ const narrowThroughDependents = (
 // sentence order and where the narrowed list has exactly one survivor, thread
 // it into resolution as source "only" so downstream lists narrow against it —
 // and may themselves become lone and fill, cascading forward until settled.
+// A numeric input never fills: the options it offers (a full-close "all") are
+// affordances beside the number the user types, not the answer.
 // Ephemeral by construction: the projection re-derives from scratch every
 // call, so a list that grows past one simply stops producing the fill. A
 // wallet slot never fills — self resolves from the session, and an external
@@ -220,6 +222,7 @@ const applyCascadeFills = (
     if (searched.has(String(index))) continue;
     const input = inputs[index];
     if (walletVariant(input) !== undefined) continue;
+    if (isNumberType(input.type)) continue;
     const options = narrowThroughDependents(
       inputs,
       action.options,

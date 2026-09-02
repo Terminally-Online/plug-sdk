@@ -227,6 +227,19 @@ describe("cascadeFills", () => {
     expect(parts[1].options).toHaveLength(1);
   });
 
+  it("never fills a numeric input, even with a single affordance", () => {
+    const action = withInputs([amount(), token()], {
+      options: {
+        "0": [{ label: "all", value: "all" }],
+        "1": [{ label: "A", value: "0xaaa" }],
+      },
+    });
+    const parts = resolveImperativeParts(action, { cascadeFills: true });
+    expect(parts[0].value).toBeUndefined();
+    expect(parts[0].options).toHaveLength(1);
+    expect(parts[1].source).toBe(PartSource.Only);
+  });
+
   it("never fills a wallet slot, even with a single suggestion", () => {
     const action = withInputs([wallet("external")], {
       options: { "0": [{ label: "Yourself", value: "0xme" }] },
