@@ -18,6 +18,9 @@ export const ActionCapabilitySchema = z.object({
 export const ActionSchema = z.object({
   protocol: z.string(),
   action: z.string(),
+  // The action's own display name — what tells two actions apart when one
+  // protocol surfaces both under the same capability verb.
+  name: z.string().optional(),
   capability: ActionCapabilitySchema.optional(),
   pins: z.record(z.string(), z.string()).optional(),
 });
