@@ -282,6 +282,8 @@ export const SimulationSchema = z.object({
   block_number: z.number().nullish(),
   outputs: z.array(SimulationOutputSchema).nullish(),
   exclusions: z.array(SimulationExclusionSchema).nullish(),
+  retained: z.array(z.string()).nullish(),
+  notes: z.array(z.string()).nullish(),
 });
 
 export const IRInstructionSchema = z.object({
