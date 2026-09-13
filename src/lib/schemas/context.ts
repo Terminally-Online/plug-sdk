@@ -101,6 +101,10 @@ export const ContextProtocolSchema = z.object({
 	chains: z.array(ChainSchema),
 	links: z.array(ContextProtocolLinkSchema).optional(),
 	actions: z.record(z.string(), ContextStepSchema).optional(),
+	// The product name a protocol ships under when one brand spans contract
+	// generations registered as separate protocols ("aave" for the v3 and v4
+	// entries). Absent means the protocol is its own brand.
+	brand: z.string().optional(),
 	// The protocol's own definition, on the same terms as an action's. It moves
 	// when the protocol's own fields move, not when one of its actions does.
 	updatedAt: z.string().optional()
