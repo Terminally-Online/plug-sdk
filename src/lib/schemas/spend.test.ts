@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { optionMaxAmount, readInputSpends } from "./spend";
+import { optionMaxAmount, readInputCeiling, readInputSpends } from "./spend";
 import { InputReference } from "../types/sentence";
 import { ContextActionOption } from "./option";
 
@@ -83,5 +83,82 @@ describe("readInputSpends", () => {
       readInputSpends({ name: "x", type: "uint256" }, () => undefined),
     ).toEqual([]);
     expect(readInputSpends(undefined, () => undefined)).toEqual([]);
+  });
+});
+
+describe("readInputCeiling", () => {
+  // The Aave V4 withdraw shape: the amount spends nothing from the wallet, so it
+  // carries only the decimal:inherit reference to the market row, which carries
+  // the supplied balance as its max.
+  const withdrawAmount: InputReference = {
+    name: "amount",
+    type: "uint256",
+    tags: [
+      { kind: "decimal", value: "inherit", reference: 1 },
+      { kind: "constraint", value: "nonzero" },
+    ],
+  };
+  const market: ContextActionOption = {
+    value: "0xmarket",
+    label: "USDC",
+    max: "17907668532",
+    decimals: 6,
+  };
+
+  it("prefers the spend reference when both a spend and an inherit reference exist", () => {
+    const input: InputReference = {
+      name: "amount",
+      type: "uint256",
+      tags: [
+        { kind: "decimal", value: "inherit", reference: 1 },
+        { kind: "spend", value: "0" },
+      ],
+    };
+    const options: Record<number, ContextActionOption> = {
+      0: { value: "0xatoken", label: "aUSDC", max: "1000000", decimals: 6 },
+      1: market,
+    };
+    expect(readInputCeiling(input, (ref) => options[ref])).toBe(options[0]);
+  });
+
+  it("falls back to the inherit reference when the input carries no spend tag", () => {
+    const options: Record<number, ContextActionOption> = { 1: market };
+    const ceiling = readInputCeiling(withdrawAmount, (ref) => options[ref]);
+    expect(ceiling).toBe(market);
+    expect(optionMaxAmount(ceiling!)).toBe("17907.668532");
+  });
+
+  it("falls through to the inherit reference when the spend option carries no max", () => {
+    const input: InputReference = {
+      name: "amount",
+      type: "uint256",
+      tags: [
+        { kind: "spend", value: "0" },
+        { kind: "decimal", value: "inherit", reference: 1 },
+      ],
+    };
+    const options: Record<number, ContextActionOption> = {
+      0: { value: "0xatoken", label: "aUSDC" },
+      1: market,
+    };
+    expect(readInputCeiling(input, (ref) => options[ref])).toBe(market);
+  });
+
+  it("yields undefined when the inherit option carries no max", () => {
+    expect(
+      readInputCeiling(withdrawAmount, () => ({ value: "0xmarket", label: "USDC", decimals: 6 })),
+    ).toBeUndefined();
+    expect(readInputCeiling(withdrawAmount, () => undefined)).toBeUndefined();
+  });
+
+  it("yields undefined for an inherit tag with no reference and for untagged inputs", () => {
+    const bare: InputReference = {
+      name: "amount",
+      type: "uint256",
+      tags: [{ kind: "decimal", value: "inherit" }],
+    };
+    expect(readInputCeiling(bare, () => market)).toBeUndefined();
+    expect(readInputCeiling({ name: "x", type: "uint256" }, () => market)).toBeUndefined();
+    expect(readInputCeiling(undefined, () => market)).toBeUndefined();
   });
 });

@@ -56,3 +56,28 @@ export const readInputSpends = (
   }
   return options;
 };
+
+// readInputCeiling resolves the asset option that bounds an amount input — the
+// asset the amount is denominated in. A spend tag is a funding declaration and
+// wins when its referenced option carries a max; an amount that spends nothing
+// from the wallet (a withdraw or borrow acting through a position on the owner's
+// behalf) carries only `decimal:inherit:N`, so the ceiling is the option chosen
+// for that reference when it carries a max. undefined when neither applies.
+export const readInputCeiling = (
+  input: InputReference | undefined,
+  optionFor: (referenceIndex: number) => ContextActionOption | undefined,
+): ContextActionOption | undefined => {
+  const [spend] = readInputSpends(input, optionFor);
+  if (spend) return spend;
+
+  const inherit = input?.tags?.find(
+    (tag) =>
+      tag.kind === TagKind.Decimal &&
+      tag.value === "inherit" &&
+      typeof tag.reference === "number",
+  );
+  if (!inherit) return undefined;
+
+  const option = optionFor(inherit.reference as number);
+  return option?.max ? option : undefined;
+};
