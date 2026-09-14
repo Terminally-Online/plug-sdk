@@ -5,7 +5,7 @@ import { ActionSchema } from "./action";
 describe("ActionSchema", () => {
   it("keeps the action's own name beside the verb", () => {
     const parsed = ActionSchema.parse({
-      protocol: "uniswap",
+      protocol: "uniswap_v3",
       action: "mint",
       name: "Mint position",
       capability: { value: "lp_addable", label: "Add Liquidity", description: "" },
