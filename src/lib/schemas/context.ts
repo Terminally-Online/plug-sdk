@@ -36,14 +36,22 @@ const OutputTypeSchema: z.ZodType<string | IOutputTypeElement[]> = z.lazy(() =>
 	z.union([z.string(), z.array(OutputTypeElementSchema)])
 )
 
-export const ContextStepOutputInfoSchema = z.object({
+// One slot's whole answer: the word's name, the type that locates it, and the
+// tags it carries. An action serving two contract generations publishes one of
+// these per generation, because the layouts differ and a client locating a
+// word has to read the one the step has.
+export const ContextStepOutputVariantSchema = z.object({
 	name: z.string(),
 	type: OutputTypeSchema,
 	offset: z.number(),
 	dynamic: z.boolean().optional(),
-	tags: InputTagsSchema.optional(),
+	tags: InputTagsSchema.optional()
+})
+
+export const ContextStepOutputInfoSchema = ContextStepOutputVariantSchema.extend({
 	selectorTags: z.record(z.string(), InputTagsSchema).optional(),
-	selectorInput: z.number().optional()
+	selectorInput: z.number().optional(),
+	selectorOutputs: z.record(z.string(), ContextStepOutputVariantSchema).optional()
 })
 
 export const ContextStepSentenceSchema = z.object({
