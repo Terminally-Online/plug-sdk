@@ -138,15 +138,6 @@ type OptionsNode = ContextActionOption[] | IContextStepOption;
 
 const COIL_REF_REGEX = /^<-\{/;
 
-/**
- * Strips per-parent metrics down to the option's identity — facets and max
- * were computed under a specific parent that a runtime coil no longer names.
- */
-const projectedOption = (option: ContextActionOption): ContextActionOption => ({
-  ...option,
-  facets: undefined,
-  max: undefined,
-});
 
 /**
  * Interleaves ranked lists rank-by-rank: every list keeps its builder ranking
@@ -203,7 +194,7 @@ const mergeAcrossParent = (node: IContextStepOption): OptionsNode => {
       const value = String(option.value);
       if (seen.has(value)) continue;
       seen.add(value);
-      out.push(projectedOption(option));
+      out.push(option);
     }
     return out;
   }
@@ -229,7 +220,7 @@ const mergeAcrossParent = (node: IContextStepOption): OptionsNode => {
  * branch collided during the merge.
  */
 const projectLeaves = (node: ContextActionOption[] | IContextStepOption): ContextActionOption[] | IContextStepOption => {
-  if (Array.isArray(node)) return node.map(projectedOption);
+  if (Array.isArray(node)) return node;
   const out: IContextStepOption = {};
   for (const key of Object.keys(node)) out[key] = projectLeaves(node[key]);
   return out;

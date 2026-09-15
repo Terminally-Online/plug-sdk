@@ -138,9 +138,9 @@ describe("resolveInputOptions", () => {
     };
     const values = [{ value: "<-{0.0}" }];
     expect(resolveInputOptions(tree, [0], values, [])).toEqual([
-      { value: "0xusd", facets: undefined, max: undefined },
-      { value: "0xeth", facets: undefined, max: undefined },
-      { value: "0xbtc", facets: undefined, max: undefined },
+      { value: "0xusd" },
+      { value: "0xeth" },
+      { value: "0xbtc" },
     ]);
   });
 
@@ -155,18 +155,18 @@ describe("resolveInputOptions", () => {
     ).toEqual(["a1", "b1", "a2", "b2"]);
   });
 
-  it("strips per-parent metrics from projected options, leaving identity", () => {
+  it("keeps an option's own facets and max on the projection", () => {
     const tree = {
       "0xaave": [
         { value: "0xusd", max: "1000", facets: [{ kind: "price", value: "$1" }] },
       ],
+      "0xlink": [{ value: "0xusd" }],
     };
     const values = [{ value: "<-{0.0}" }];
     const resolved = resolveInputOptions(tree, [0], values, []);
-    expect(resolved?.[0].value).toBe("0xusd");
-    expect(resolved?.[0].max).toBeUndefined();
-    expect(resolved?.[0].facets).toBeUndefined();
-    expect(tree["0xaave"][0].max).toBe("1000");
+    expect(resolved).toEqual([
+      { value: "0xusd", max: "1000", facets: [{ kind: "price", value: "$1" }] },
+    ]);
   });
 
   it("merges record subtrees on a coiled dep so a later dep still keys the chain", () => {
@@ -176,12 +176,12 @@ describe("resolveInputOptions", () => {
     };
     const values = [{ value: "<-{0.0}" }, { value: "1" }];
     expect(resolveInputOptions(tree, [0, 1], values, [])).toEqual([
-      { value: "0xpos1", facets: undefined, max: undefined },
-      { value: "0xpos2", facets: undefined, max: undefined },
+      { value: "0xpos1" },
+      { value: "0xpos2" },
     ]);
 
     const uncollided = resolveInputOptions(tree, [0, 1], [{ value: "<-{0.0}" }, { value: "2" }], []);
-    expect(uncollided?.[0].max).toBeUndefined();
+    expect(uncollided?.[0].max).toBe("5");
   });
 
   it("a tag ref that dereferences to a coil ref also projects", () => {
@@ -210,8 +210,8 @@ describe("resolveInputOptions", () => {
     const values = [{ value: "<={0.0}" }];
     const actions = [{ values: [{ value: "myToken" }, { value: "<-{2.0}" }] }];
     expect(resolveInputOptions(tree, [0], values, actions)).toEqual([
-      { value: "0xusd", facets: undefined, max: undefined },
-      { value: "0xbtc", facets: undefined, max: undefined },
+      { value: "0xusd", max: "10" },
+      { value: "0xbtc" },
     ]);
   });
 });
