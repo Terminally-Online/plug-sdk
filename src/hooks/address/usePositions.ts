@@ -123,7 +123,8 @@ export function usePositions(
     { enabled: enabled && stream && !!address, infinite: isInfinite },
   );
 
-  const pages = infinite.data?.pages ?? [];
+  const loadedPages = infinite.data?.pages;
+  const pages = useMemo(() => loadedPages ?? [], [loadedPages]);
   const firstPage = pages[0];
   const allData = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
 

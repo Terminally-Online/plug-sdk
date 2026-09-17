@@ -159,21 +159,6 @@ const interleaveByRank = (lists: ContextActionOption[][]): ContextActionOption[]
 };
 
 /**
- * Collapses a subtree to a single ranked list; nested trees arise from chained
- * dependencies and collapse by the same rank interleave, key-sorted for
- * stability.
- */
-const collectRanked = (node: ContextActionOption[] | IContextStepOption): ContextActionOption[] => {
-  if (Array.isArray(node)) return node;
-  return interleaveByRank(
-    Object.keys(node)
-      .sort()
-      .map((key) => collectRanked(node[key]))
-      .filter((list) => list.length > 0),
-  );
-};
-
-/**
  * Merges a dependent tree across every parent key — the resolution when a
  * dependency is filled by a runtime coil ref and no single subtree can be
  * chosen. Array subtrees union into the child dimension's flat deduped

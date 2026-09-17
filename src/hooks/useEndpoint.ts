@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { isApiResponse, isErrorResponse } from "../lib/functions/response";
 
@@ -24,14 +24,19 @@ export function useEndpoint<TParams, TData>(
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetch = async () => {
+  const latest = useRef({ endpoint, params });
+  useEffect(() => {
+    latest.current = { endpoint, params };
+  });
+
+  const fetch = useCallback(async () => {
     if (!enabled) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await endpoint(params);
+      const result = await latest.current.endpoint(latest.current.params);
 
       if (isApiResponse(result) && isErrorResponse(result.data)) {
         setError(new Error(result.data.error));
@@ -44,8 +49,9 @@ export function useEndpoint<TParams, TData>(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [enabled]);
 
+  const paramsKey = JSON.stringify(params);
   useEffect(() => {
     if (!enabled) {
       setIsLoading(false);
@@ -53,7 +59,7 @@ export function useEndpoint<TParams, TData>(
     }
 
     fetch();
-  }, [enabled, JSON.stringify(params)]);
+  }, [enabled, paramsKey, fetch]);
 
   return {
     data,

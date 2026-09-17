@@ -109,24 +109,15 @@ export function useSeries(
     { enabled: enabled && stream && !!address, infinite: isInfinite },
   );
 
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = infinite;
   useEffect(() => {
-    if (
-      isInfinite &&
-      drain &&
-      infinite.hasNextPage &&
-      !infinite.isFetchingNextPage
-    ) {
-      infinite.fetchNextPage();
+    if (isInfinite && drain && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [
-    isInfinite,
-    drain,
-    infinite.hasNextPage,
-    infinite.isFetchingNextPage,
-    infinite.fetchNextPage,
-  ]);
+  }, [isInfinite, drain, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const pages = infinite.data?.pages ?? [];
+  const loadedPages = infinite.data?.pages;
+  const pages = useMemo(() => loadedPages ?? [], [loadedPages]);
   const firstPage = pages[0];
   const allData = useMemo(() => pages.flatMap((p) => p.data ?? []), [pages]);
 
