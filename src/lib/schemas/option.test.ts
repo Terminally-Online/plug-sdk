@@ -126,6 +126,24 @@ describe("resolveInputOptions", () => {
     expect(resolveInputOptions(tree, [1], values, [])).toBeUndefined();
   });
 
+  it("reaches a lowercase-keyed branch from a checksummed dep value", () => {
+    const tree = { "0xabcdef": [{ value: "0xm1" }] };
+    const values = [undefined, { value: "0xAbCdEf" }];
+    expect(resolveInputOptions(tree, [1], values, [])).toEqual([{ value: "0xm1" }]);
+  });
+
+  it("reaches a checksum-keyed branch from a lowercase dep value, at every depth", () => {
+    const tree = { wallet: { "0xSpEnDeR": [{ value: "0xusdc" }] } };
+    const values = [{ value: "wallet" }, { value: "0xspender" }];
+    expect(resolveInputOptions(tree, [0, 1], values, [])).toEqual([{ value: "0xusdc" }]);
+  });
+
+  it("prefers the key as written over a canonical match", () => {
+    const tree = { "0xAB": [{ value: "exact" }], "0xab": [{ value: "lower" }] };
+    expect(resolveInputOptions(tree, [0], [{ value: "0xab" }], [])).toEqual([{ value: "lower" }]);
+    expect(resolveInputOptions(tree, [0], [{ value: "0xAB" }], [])).toEqual([{ value: "exact" }]);
+  });
+
   it("returns undefined when a nested tree is reached without requires", () => {
     const tree = { "1": [{ value: "0xusdc" }] };
     expect(resolveInputOptions(tree, undefined, [], [])).toBeUndefined();
@@ -307,6 +325,22 @@ describe("narrowByDependent", () => {
       [],
     );
     expect(narrowed?.map((option) => option.value)).toEqual(["0xweth"]);
+  });
+
+  it("walks through a resolved sibling parent whose key differs only in case", () => {
+    const users: ContextActionOption[] = [{ value: "wallet" }, { value: "socket" }];
+    const tokensByUserThenSpender = {
+      wallet: { "0xSpEnDeR": [{ value: "0xusdc" }] },
+      socket: { "0xSpEnDeR": [{ value: "0xdai" }] },
+    };
+    const narrowed = narrowByDependent(
+      users,
+      0,
+      { options: tokensByUserThenSpender, requires: [0, 1], value: "0xusdc" },
+      [undefined, { value: "0xspender" }],
+      [],
+    );
+    expect(narrowed?.map((option) => option.value)).toEqual(["wallet"]);
   });
 
   it("returns an empty set when no parent reaches the pinned dependent", () => {

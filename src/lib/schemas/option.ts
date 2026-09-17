@@ -226,6 +226,30 @@ const projectLeaves = (node: ContextActionOption[] | IContextStepOption): Contex
   return out;
 };
 
+// Option values and the values pinned against them are compared in one
+// canonical case. Addresses reach the client in both forms — an option list
+// carries them lowercase, while an attribute may carry the EIP-55 checksum it
+// was rendered with — and the checksum is a display convention, never part of
+// the value.
+const canonical = (value: unknown) => String(value).toLowerCase();
+
+/**
+ * The subtree a tree holds for one parent value. A tree's keys are parent
+ * values, so they are matched the way values are: the key as written first,
+ * then in the canonical case, since a tree keyed by lowercase addresses can be
+ * asked for a checksummed one and a tree keyed by checksummed addresses for a
+ * lowercase one.
+ */
+const branchOf = (node: IContextStepOption, value: unknown): OptionsNode | undefined => {
+  const exact = node[String(value)];
+  if (exact) return exact;
+  const wanted = canonical(value);
+  for (const key of Object.keys(node)) {
+    if (canonical(key) === wanted) return node[key];
+  }
+  return undefined;
+};
+
 /**
  * Walks a nested options tree for a single input, following the `requires` dependency
  * chain and dereferencing tag values along the way. A dependency filled by a runtime
@@ -253,8 +277,9 @@ export const resolveInputOptions = (
           current = mergeAcrossParent(current);
           continue;
         }
-        current = current[String(depValue)];
-        if (!current) return undefined;
+        const branch = branchOf(current, depValue);
+        if (!branch) return undefined;
+        current = branch;
       }
     }
     return Array.isArray(current) ? current : undefined;
@@ -275,12 +300,6 @@ export const resolveInputOptions = (
  * the surviving options — empty when no parent value can reach the pinned
  * dependent, which renders honestly as nothing valid to pick.
  */
-// Option values and the values pinned against them are compared in one
-// canonical case. Addresses reach the client in both forms — an option list
-// carries them lowercase, while an attribute may carry the EIP-55 checksum it
-// was rendered with — and the checksum is a display convention, never part of
-// the value.
-const canonical = (value: unknown) => String(value).toLowerCase();
 
 export const narrowByDependent = (
   parentOptions: ContextActionOption[] | undefined,
@@ -315,7 +334,7 @@ export const narrowByDependent = (
     }
     const depValue = depIdx === undefined ? undefined : derefTagValue(values?.[depIdx]?.value, actions);
     if (depValue !== undefined && !COIL_REF_REGEX.test(String(depValue))) {
-      const child = node[String(depValue)];
+      const child = branchOf(node, depValue);
       if (child) walk(child, depth + 1, parentKey);
       return;
     }
