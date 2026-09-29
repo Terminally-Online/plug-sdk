@@ -161,4 +161,39 @@ describe("readInputCeiling", () => {
     expect(readInputCeiling({ name: "x", type: "uint256" }, () => market)).toBeUndefined();
     expect(readInputCeiling(undefined, () => market)).toBeUndefined();
   });
+  // The ERC-1155 transfer shape: a whole count read at zero decimals, picked
+  // within the collection and the id chosen before it, whose own options are
+  // the balance held of that id.
+  const editionAmount: InputReference = {
+    name: "amount",
+    type: "uint256",
+    tags: [
+      { kind: "decimal", value: "0" },
+      { kind: "constraint", value: "nonzero" },
+    ],
+  };
+  const held: ContextActionOption = {
+    value: "134",
+    label: "134",
+    name: "All held",
+    max: "134",
+    decimals: 0,
+  };
+
+  it("bounds an amount by its own held option when it references no asset", () => {
+    const ceiling = readInputCeiling(editionAmount, () => undefined, [held]);
+    expect(ceiling).toBe(held);
+    expect(optionMaxAmount(ceiling!)).toBe("134");
+  });
+
+  it("prefers a referenced asset's ceiling over the amount's own options", () => {
+    const options: Record<number, ContextActionOption> = { 1: market };
+    expect(readInputCeiling(withdrawAmount, (ref) => options[ref], [held])).toBe(market);
+  });
+
+  it("yields undefined when the amount's own options carry no max", () => {
+    expect(
+      readInputCeiling(editionAmount, () => undefined, [{ value: "5", label: "5" }]),
+    ).toBeUndefined();
+  });
 });

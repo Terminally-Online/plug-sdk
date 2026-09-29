@@ -62,10 +62,14 @@ export const readInputSpends = (
 // wins when its referenced option carries a max; an amount that spends nothing
 // from the wallet (a withdraw or borrow acting through a position on the owner's
 // behalf) carries only `decimal:inherit:N`, so the ceiling is the option chosen
-// for that reference when it carries a max. undefined when neither applies.
+// for that reference when it carries a max. An amount that names no asset at
+// all — an ERC-1155 count picked within the id chosen before it — is bounded by
+// the first of its own options that carries a max, which is the balance held.
+// undefined when none applies.
 export const readInputCeiling = (
   input: InputReference | undefined,
   optionFor: (referenceIndex: number) => ContextActionOption | undefined,
+  own?: ContextActionOption[],
 ): ContextActionOption | undefined => {
   const [spend] = readInputSpends(input, optionFor);
   if (spend) return spend;
@@ -76,7 +80,7 @@ export const readInputCeiling = (
       tag.value === "inherit" &&
       typeof tag.reference === "number",
   );
-  if (!inherit) return undefined;
+  if (!inherit) return own?.find((option) => option.max);
 
   const option = optionFor(inherit.reference as number);
   return option?.max ? option : undefined;
