@@ -1,7 +1,6 @@
 import { useMemo, useCallback } from "react";
 
 import {
-  keepPreviousData,
   QueryObserverResult,
   RefetchOptions,
   useInfiniteQuery,
@@ -10,7 +9,7 @@ import {
 } from "@tanstack/react-query";
 
 import { usePlugContext } from "../../provider";
-import { QueryKeys } from "../../config";
+import { keepPreviousOnSameChain, QueryKeys } from "../../config";
 import { useStream } from "../stream/useStream";
 
 import {
@@ -206,7 +205,7 @@ export function useContext(
       client.getContext({ address: address!, filter, search, intent, draft, selections }),
     enabled: enabled && !!address,
     staleTime: CONTEXT_STALE_TIME_MS,
-    placeholderData: search || draft ? keepPreviousData : undefined,
+    placeholderData: search || draft ? keepPreviousOnSameChain(queryKey) : undefined,
   });
 
   useStream(
@@ -265,7 +264,7 @@ export function useContext(
     getNextPageParam: (lastPage) => lastPage.links?.next ?? undefined,
     initialPageParam: (coiled ? 0 : OPTION_PAGE_SIZE) as number | string,
     enabled: enabled && !!address && input != null && focusedFull,
-    placeholderData: keepPreviousData,
+    placeholderData: keepPreviousOnSameChain(focusedKey),
   });
 
   // Merge the focused pages onto the shape: the focused input's node is replaced

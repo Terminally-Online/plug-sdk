@@ -83,6 +83,32 @@ export const CACHE_CONFIG: CacheConfig = {
 const stableStringify = (obj: unknown): string | undefined =>
   obj === undefined ? undefined : JSON.stringify(obj);
 
+const chainOfKey = (queryKey: readonly unknown[]): unknown => {
+  for (const part of queryKey) {
+    if (typeof part !== "string" || !part.startsWith("{")) continue;
+    const parsed = JSON.parse(part) as { chain_id?: unknown };
+    if (parsed.chain_id !== undefined) return parsed.chain_id;
+  }
+  return undefined;
+};
+
+/**
+ * A placeholderData policy that carries a query's previous result forward
+ * only while the previous query answered for the same chain as queryKey, so a
+ * compile, simulation or option list read on one chain is never shown as the
+ * answer for another while the new chain's result loads.
+ */
+export const keepPreviousOnSameChain =
+  (queryKey: readonly unknown[]) =>
+  <T>(
+    previous: T | undefined,
+    previousQuery: { queryKey: readonly unknown[] } | undefined,
+  ): T | undefined =>
+    previousQuery !== undefined &&
+    chainOfKey(previousQuery.queryKey) === chainOfKey(queryKey)
+      ? previous
+      : undefined;
+
 export const QueryKeys = {
   all: ["plug"] as const,
 

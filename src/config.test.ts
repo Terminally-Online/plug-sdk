@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createConfig,
   DEFAULT_SDK_CONFIG,
+  keepPreviousOnSameChain,
   QueryKeys,
   resolveBrowserBaseUrl,
 } from "./config";
@@ -144,5 +145,38 @@ describe("QueryKeys", () => {
     expect(key[1]).toBe("positions");
     expect(key[2]).toBe("0xabc");
     expect(key[3]).toBeUndefined();
+  });
+});
+
+describe("keepPreviousOnSameChain", () => {
+  const steps = { 0: { protocol: "aave_v3", step: "deposit" } };
+  const previous = { simulation: { verdict: "executable" } };
+
+  it("carries a compile forward while it answers for the same chain", () => {
+    const placeholder = keepPreviousOnSameChain(
+      QueryKeys.compile({ chain_id: 8453, steps: { ...steps, 1: { protocol: "aave_v3", step: "borrow" } } }),
+    );
+    expect(placeholder(previous, { queryKey: QueryKeys.compile({ chain_id: 8453, steps }) })).toBe(previous);
+  });
+
+  it("never shows one chain's compile as another chain's answer", () => {
+    const placeholder = keepPreviousOnSameChain(QueryKeys.compile({ chain_id: 8453, steps }));
+    expect(placeholder(previous, { queryKey: QueryKeys.compile({ chain_id: 1, steps }) })).toBeUndefined();
+  });
+
+  it("never shows one chain's projection as another chain's answer", () => {
+    const placeholder = keepPreviousOnSameChain(QueryKeys.projection({ chain_id: 8453, steps }));
+    expect(placeholder(previous, { queryKey: QueryKeys.projection({ chain_id: 1, steps }) })).toBeUndefined();
+  });
+
+  it("follows the chain a context filter names", () => {
+    const placeholder = keepPreviousOnSameChain(QueryKeys.context("0xabc", { chain_id: 8453 }, { query: "us" }));
+    expect(placeholder(previous, { queryKey: QueryKeys.context("0xabc", { chain_id: 8453 }, { query: "u" }) })).toBe(previous);
+    expect(placeholder(previous, { queryKey: QueryKeys.context("0xabc", { chain_id: 1 }, { query: "us" }) })).toBeUndefined();
+  });
+
+  it("has nothing to carry before a first result", () => {
+    const placeholder = keepPreviousOnSameChain(QueryKeys.compile({ chain_id: 8453, steps }));
+    expect(placeholder(undefined, undefined)).toBeUndefined();
   });
 });

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { QueryKeys } from "../../config";
+import { keepPreviousOnSameChain, QueryKeys } from "../../config";
 import {
   CompileTransactionData,
   CompileTransactionQueryParams,
@@ -36,7 +36,7 @@ export function useProjection(
     queryKey,
     queryFn: () => client.compileTransaction({ input: input! }),
     enabled: enabled && !!input && Object.keys(input.steps ?? {}).length > 0,
-    placeholderData: (previous) => previous,
+    placeholderData: keepPreviousOnSameChain(queryKey),
   });
 
   const data = result.data?.data ?? undefined;

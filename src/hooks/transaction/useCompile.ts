@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { usePlugContext } from "../../provider";
-import { QueryKeys } from "../../config";
+import { keepPreviousOnSameChain, QueryKeys } from "../../config";
 import {
   CompileTransactionQueryParams,
   type CoilOption,
@@ -63,7 +63,7 @@ export function useCompile(options: UseCompileOptions = {}): UseCompileResult {
     queryKey,
     queryFn: () => client.compileTransaction({ input: input! }),
     enabled: enabled && !!input,
-    placeholderData: keepPreviousData,
+    placeholderData: keepPreviousOnSameChain(queryKey),
   });
 
   const data = result.data?.data as CompileTransactionData | null | undefined;
