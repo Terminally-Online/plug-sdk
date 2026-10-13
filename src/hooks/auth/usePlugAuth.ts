@@ -6,18 +6,32 @@ import type { StoredSession } from "../../auth/store";
 import { usePlugContext } from "../../provider";
 import { PlugSDKError } from "../../types";
 
-export interface UsePlugAuthOptions {
+interface UsePlugAuthReadOptions {
   /** Defaults to the session's active address. */
   address?: string;
+  statement?: string | ((address: string) => string);
+}
+
+interface UsePlugAuthSignOptions {
   /**
    * Signs the SIWE message. Required to call `signIn`, and passed here rather
    * than to the provider because it usually comes from a hook whose identity
    * changes — the provider config must keep one identity for the app's life.
    */
-  signMessage?: (message: string) => Promise<string>;
-  statement?: string | ((address: string) => string);
-  chainId?: number;
+  signMessage: (message: string) => Promise<string>;
+  /**
+   * The chain the wallet is connected to as it signs, which the message
+   * claims as its `Chain ID`.
+   */
+  chainId: number;
 }
+
+/**
+ * Reading the session needs nothing; signing in needs both a way to sign and
+ * the chain the wallet signs on, so the two arrive together or not at all.
+ */
+export type UsePlugAuthOptions = UsePlugAuthReadOptions &
+  (UsePlugAuthSignOptions | { signMessage?: undefined; chainId?: undefined });
 
 export interface UsePlugAuthResult {
   address: string | null;

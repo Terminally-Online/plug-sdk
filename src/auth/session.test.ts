@@ -213,6 +213,7 @@ describe("PlugSession.signIn", () => {
     const result = await session.signIn({
       address: ADDRESS,
       signMessage,
+      chainId: 1,
       domain: "poof.plug.to",
       uri: "https://poof.plug.to",
       statement: "Access poof.",
@@ -250,6 +251,7 @@ describe("PlugSession.signIn", () => {
         signMessage: async () => {
           throw new Error("user rejected");
         },
+        chainId: 1,
         domain: "poof.plug.to",
         uri: "https://poof.plug.to",
       }),
@@ -266,7 +268,47 @@ describe("PlugSession.signIn", () => {
     });
 
     await expect(
-      session.signIn({ address: ADDRESS, signMessage: async () => "0xsig" }),
+      session.signIn({
+        address: ADDRESS,
+        signMessage: async () => "0xsig",
+        chainId: 1,
+      }),
     ).rejects.toThrow(/domain and uri/);
+  });
+
+  it("signs for the chain the wallet is on", async () => {
+    const signMessage = vi.fn(async (_message: string) => "0xsignature");
+    const session = new PlugSession({
+      client: stubClient({ getNonce: vi.fn(async () => NONCE) }),
+      store: memorySessionStore(),
+    });
+
+    await session.signIn({
+      address: ADDRESS,
+      signMessage,
+      chainId: 8453,
+      domain: "poof.plug.to",
+      uri: "https://poof.plug.to",
+    });
+
+    expect(signMessage.mock.calls[0][0]).toContain("Chain ID: 8453");
+  });
+
+  it("never claims mainnet for a caller that named no chain", async () => {
+    const signMessage = vi.fn(async (_message: string) => "0xsignature");
+    const session = new PlugSession({
+      client: stubClient({ getNonce: vi.fn(async () => NONCE) }),
+      store: memorySessionStore(),
+    });
+
+    // @ts-expect-error the chain is the wallet's, so a sign-in must name it
+    await session.signIn({
+      address: ADDRESS,
+      signMessage,
+      domain: "poof.plug.to",
+      uri: "https://poof.plug.to",
+    });
+
+    expect(signMessage.mock.calls[0][0]).not.toMatch(/^Chain ID: 1$/m);
   });
 });

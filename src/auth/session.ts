@@ -38,8 +38,11 @@ export interface SignInParams {
    * viem's `walletClient.signMessage`, an ethers `Signer`.
    */
   signMessage: (message: string) => Promise<string>;
-  /** Defaults to 1. */
-  chainId?: number;
+  /**
+   * The chain the wallet is connected to as it signs, which the message
+   * claims as its `Chain ID`.
+   */
+  chainId: number;
   statement?: string;
   /** Defaults to the page's host. Required off the browser. */
   domain?: string;
@@ -142,7 +145,7 @@ export class PlugSession {
       domain,
       uri,
       nonce: nonce.data.nonce,
-      chainId: params.chainId ?? 1,
+      chainId: params.chainId,
       statement: params.statement,
       resources: params.resources,
       expirationTime: params.expirationTime,

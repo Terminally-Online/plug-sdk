@@ -66,7 +66,9 @@ export const SeriesFilterSchema = z.object({
 	chain_id: z
 		.number()
 		.optional()
-		.describe("Chain ID to query. Defaults to mainnet."),
+		.describe(
+			"Chain the history is read on. Required with filter[address]: a token or contract address names nothing without its chain.",
+		),
 })
 
 export const SeriesTimeSchema = z.object({
@@ -119,7 +121,18 @@ export const SeriesResponseSchema = createResponseSchema(SeriesSchema)
 
 export type SeriesEntry = z.infer<typeof SeriesEntrySchema>
 export type Series = z.infer<typeof SeriesSchema>
-export type SeriesQueryParams = { address: string } & z.infer<
-	typeof SeriesQueryParamsSchema
->
+type SeriesFilter = z.infer<typeof SeriesFilterSchema>
+
+/**
+ * A token or contract address is only an identity on a chain, so a filter that
+ * names one names its chain too.
+ */
+export type SeriesFilterParams =
+	| (SeriesFilter & { address: string; chain_id: number })
+	| (SeriesFilter & { address?: undefined; token_id?: undefined })
+
+export type SeriesQueryParams = { address: string } & Omit<
+	z.infer<typeof SeriesQueryParamsSchema>,
+	"filter"
+> & { filter?: SeriesFilterParams }
 export type SeriesResponse = z.infer<typeof SeriesResponseSchema>

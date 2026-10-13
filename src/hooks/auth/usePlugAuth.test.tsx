@@ -86,6 +86,7 @@ describe("usePlugAuth", () => {
       address: ADDRESS,
       signMessage,
       statement: (address) => `Access as ${address}.`,
+      chainId: 1,
     });
 
     await act(async () => {
@@ -101,7 +102,11 @@ describe("usePlugAuth", () => {
 
   it("re-renders when the session is cleared out from under it", async () => {
     const signMessage = vi.fn(async (_message: string) => "0xsignature");
-    const auth = renderAuth(session, { address: ADDRESS, signMessage });
+    const auth = renderAuth(session, {
+      address: ADDRESS,
+      signMessage,
+      chainId: 1,
+    });
 
     await act(async () => {
       await auth.current.signIn();
@@ -125,6 +130,7 @@ describe("usePlugAuth", () => {
   it("refuses to sign in with no address anywhere", async () => {
     const auth = renderAuth(session, {
       signMessage: async () => "0xsignature",
+      chainId: 1,
     });
 
     await expect(auth.current.signIn()).rejects.toThrow(/address/);
@@ -134,8 +140,37 @@ describe("usePlugAuth", () => {
     const auth = renderAuth(undefined, {
       address: ADDRESS,
       signMessage: async () => "0xsignature",
+      chainId: 1,
     });
 
     await expect(auth.current.signIn()).rejects.toThrow(/session/);
+  });
+
+  it("signs in on the chain the wallet is on", async () => {
+    const signMessage = vi.fn(async (_message: string) => "0xsignature");
+    const auth = renderAuth(session, {
+      address: ADDRESS,
+      signMessage,
+      chainId: 8453,
+    });
+
+    await act(async () => {
+      await auth.current.signIn();
+    });
+
+    expect(signMessage.mock.calls[0][0]).toContain("Chain ID: 8453");
+  });
+
+  it("never claims mainnet for a caller that named no chain", async () => {
+    const signMessage = vi.fn(async (_message: string) => "0xsignature");
+    // @ts-expect-error a way to sign comes with the chain it signs on
+    const options: UsePlugAuthOptions = { address: ADDRESS, signMessage };
+    const auth = renderAuth(session, options);
+
+    await act(async () => {
+      await auth.current.signIn();
+    });
+
+    expect(signMessage.mock.calls[0][0]).not.toMatch(/^Chain ID: 1$/m);
   });
 });
