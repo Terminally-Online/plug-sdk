@@ -34,4 +34,20 @@ describe("SeriesQueryParams", () => {
     expect(chain?.description).not.toMatch(/mainnet|ethereum|defaults/i);
     expect(chain?.description).toMatch(/filter\[address\]/);
   });
+
+  it("reads an asset's history across every chain it is held on", () => {
+    const series = API_ENDPOINTS.find(
+      (endpoint) => endpoint.operationId === "getSeries",
+    );
+    const asset = series?.params.find(
+      (param) => param.name === "filter[asset]",
+    );
+    const params: SeriesQueryParams = {
+      address: OWNER,
+      filter: { address: TOKEN, chain_id: 1, asset: true },
+    };
+
+    expect(asset?.description).toMatch(/every/);
+    expect(params.filter?.asset).toBe(true);
+  });
 });

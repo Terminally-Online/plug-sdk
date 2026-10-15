@@ -69,6 +69,12 @@ export const SeriesFilterSchema = z.object({
 		.describe(
 			"Chain the history is read on. Required with filter[address]: a token or contract address names nothing without its chain.",
 		),
+	asset: z
+		.boolean()
+		.optional()
+		.describe(
+			"With filter[address], read the holder's balance of every deployment of that token's asset, on every chain it is held on, priced at the named token.",
+		),
 })
 
 export const SeriesTimeSchema = z.object({

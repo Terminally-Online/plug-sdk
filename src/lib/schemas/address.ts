@@ -163,6 +163,15 @@ export const AddressRelationshipSchema = z.object({
   balance: AddressBalanceSchema.optional(),
 });
 
+export const AddressAssetSchema = z
+  .object({
+    chain_id: z.number(),
+    address: z.string(),
+  })
+  .describe(
+    "The deployment of the asset a fungible holding is: the token itself, or the deployment it represents on the chain its chain settles on (a chain's bridged native coin, a bridge-minted token's remote token). Every holding of one asset carries the same asset on whichever chain it is held, so rows sharing it are one holding across chains. Positions and collectibles carry none.",
+  );
+
 export const AddressSchema = z.object({
   chain_id: z.number(),
   address: z.string(),
@@ -185,6 +194,7 @@ export const AddressSchema = z.object({
   tokens: z.array(AddressRelationshipSchema).optional(),
   visibility: z.string().optional(),
   actions: z.array(ActionSchema).optional(),
+  asset: AddressAssetSchema.optional(),
 });
 
 export const AddressParamsSchema = z.object({
@@ -318,6 +328,7 @@ export const PositionsResponseSchema = createResponseSchema(
   PortfolioHeadersSchema,
 );
 
+export type AddressAsset = z.infer<typeof AddressAssetSchema>;
 export type AddressBalance = z.infer<typeof AddressBalanceSchema>;
 export type AddressRelationship = z.infer<typeof AddressRelationshipSchema>;
 export type Address = z.infer<typeof AddressSchema>;

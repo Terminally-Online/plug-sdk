@@ -385,3 +385,22 @@ describe("PositionsResponseSchema", () => {
     ).toBe(false);
   });
 });
+
+describe("AddressSchema asset", () => {
+  it("carries the deployment of the asset a fungible holding is", () => {
+    const row = AddressSchema.parse({
+      chain_id: 8453,
+      address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      standard: "erc:20",
+      asset: {
+        chain_id: 1,
+        address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      },
+    });
+
+    expect(row.asset).toEqual({
+      chain_id: 1,
+      address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    });
+  });
+});
