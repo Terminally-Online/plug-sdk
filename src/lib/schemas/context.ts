@@ -82,6 +82,11 @@ export const ContextStepSchema = z.object({
 	feeds: z.array(z.string()).optional(),
 	options: ContextStepOptionsSchema.optional(),
 	meta: MetaSchema.optional(),
+	// The chains this action runs on: those of its protocol's chains it can be
+	// offered on. A protocol lists every chain any of its actions runs on, so
+	// narrowing to one chain by the protocol's list alone keeps actions that
+	// chain cannot serve.
+	chains: z.array(z.number()),
 	// When this action's definition last looked different, measured by the API
 	// rather than declared: it digests what it serves and remembers when each
 	// digest first appeared. Optional because a definition the API has not

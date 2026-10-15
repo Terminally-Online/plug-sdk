@@ -15,6 +15,7 @@ const step = (over: Partial<ContextStep>): ContextStep => ({
   description: "",
   icon: "",
   sentence: { raw: "", template: "", inputs: [] },
+  chains: [1],
   ...over,
 });
 
