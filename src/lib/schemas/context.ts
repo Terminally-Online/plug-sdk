@@ -72,6 +72,36 @@ export const MetaSchema = z.object({
 	inputs: z.record(z.string(), MetaFacetsSchema).optional()
 })
 
+// The route facet a swap's meta carries: the parallel paths the solver splits the
+// input across, and the identity of every token those paths cross keyed by its
+// lowercase address — so a path through a token no option list offers still
+// renders as that token.
+export const MetaRoutePoolSchema = z.object({
+	address: z.string(),
+	amount_in: z.number(),
+	amount_out: z.number()
+})
+export const MetaRouteHopSchema = z.object({
+	token_in: z.string(),
+	token_out: z.string(),
+	pools: z.array(MetaRoutePoolSchema).optional()
+})
+export const MetaRouteLegSchema = z.object({
+	amount_in: z.number(),
+	amount_out: z.number(),
+	hops: z.array(MetaRouteHopSchema).optional()
+})
+export const MetaRouteTokenSchema = z.object({
+	symbol: z.string(),
+	name: z.string(),
+	decimals: z.number(),
+	icon: z.string()
+})
+export const MetaRouteSchema = z.object({
+	routes: z.array(MetaRouteLegSchema),
+	tokens: z.record(z.string(), MetaRouteTokenSchema)
+})
+
 export const ContextStepSchema = z.object({
 	type: z.string(),
 	sentence: ContextStepSentenceSchema,
@@ -186,3 +216,8 @@ export type ContextResponse = z.infer<typeof ContextResponseSchema>
 export type ContextAction = z.infer<typeof ContextActionSchema>
 export type Meta = z.infer<typeof MetaSchema>
 export type MetaFacets = z.infer<typeof MetaFacetsSchema>
+export type MetaRoute = z.infer<typeof MetaRouteSchema>
+export type MetaRouteLeg = z.infer<typeof MetaRouteLegSchema>
+export type MetaRouteHop = z.infer<typeof MetaRouteHopSchema>
+export type MetaRoutePool = z.infer<typeof MetaRoutePoolSchema>
+export type MetaRouteToken = z.infer<typeof MetaRouteTokenSchema>
