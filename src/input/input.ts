@@ -1,6 +1,7 @@
 import {
   InputReference,
   InputType,
+  OptionsPresets,
   SentenceMode,
   Standard,
   TagKind,
@@ -20,6 +21,27 @@ export const isNumberType = (type: InputType | undefined): boolean => {
 // inputs, the address counterpart to isNumberType.
 export const isAddressType = (type: InputType | undefined): boolean => {
   return type === "address";
+};
+
+// optionsArePresets reads whether the options an input is offered are presets
+// beside free entry or everything it accepts, mirroring gusher's
+// tags.OptionsPresets. A number read at a scale (a decimal tag the input states
+// for itself) is a quantity, so the words its amount, price or size is offered
+// — all, none, any price — sit beside any value of its type. An unscaled number
+// says so with options:presets: the widths of a tick range, the usual terms of
+// a lock. Anything else — an index, a market, a token, a selector — is chosen
+// from its options and from nothing else.
+export const optionsArePresets = (
+  input: Pick<InputReference, "type" | "tags"> | undefined,
+): boolean => {
+  const tags = input?.tags ?? [];
+  if (tags.some((t) => t.kind === TagKind.Standard)) return false;
+  if (tags.some((t) => t.kind === TagKind.Options && t.value === OptionsPresets))
+    return true;
+  return (
+    isNumberType(input?.type) &&
+    tags.some((t) => t.kind === TagKind.Decimal && t.value !== "counterpart")
+  );
 };
 
 // walletVariant reads a wallet-standard input's intent: `self` (the caller's own

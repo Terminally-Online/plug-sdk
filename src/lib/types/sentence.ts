@@ -109,8 +109,14 @@ export const TagKind = {
   Format: "format",
   Coerce: "coerce",
   Spend: "spend",
+  Options: "options",
 } as const;
 export type TagKind = (typeof TagKind)[keyof typeof TagKind];
+
+// OptionsPresets is the `value` of a TagKind.Options tag: the options the input
+// is offered are presets over every value of its type, not the whole of what it
+// accepts.
+export const OptionsPresets = "presets";
 
 // Standard is the `value` of a TagKind.Standard tag — the semantic type an input wants.
 export const Standard = {

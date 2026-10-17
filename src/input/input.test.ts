@@ -6,6 +6,7 @@ import {
   isNumberType,
   getTypeDescription,
   getInputPlaceholder,
+  optionsArePresets,
   walletVariant,
 } from "./input";
 import { InputReference } from "../lib/types/sentence";
@@ -341,5 +342,55 @@ describe("isAddressType", () => {
     expect(isAddressType("bool")).toBe(false);
     expect(isAddressType({ constant: "0x0" })).toBe(false);
     expect(isAddressType(undefined)).toBe(false);
+  });
+});
+
+describe("optionsArePresets", () => {
+  it("reads a scaled number's options as presets", () => {
+    expect(
+      optionsArePresets({
+        type: "uint256",
+        tags: [
+          { kind: "decimal", value: "inherit", dynamic: true, reference: 1 },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      optionsArePresets({ type: "uint256", tags: [{ kind: "decimal", value: "18" }] }),
+    ).toBe(true);
+  });
+
+  it("reads an unscaled number's options as presets only when it declares them", () => {
+    expect(
+      optionsArePresets({ type: "int24", tags: [{ kind: "options", value: "presets" }] }),
+    ).toBe(true);
+    expect(optionsArePresets({ type: "uint256", tags: [] })).toBe(false);
+    expect(optionsArePresets({ type: "int24" })).toBe(false);
+  });
+
+  it("never reads a standard's options as presets", () => {
+    expect(
+      optionsArePresets({
+        type: "uint256",
+        tags: [
+          { kind: "standard", value: "selector" },
+          { kind: "decimal", value: "raw" },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      optionsArePresets({ type: "address", tags: [{ kind: "standard", value: "token" }] }),
+    ).toBe(false);
+  });
+
+  it("leaves a borrowed scale and a non-number to their options", () => {
+    expect(
+      optionsArePresets({
+        type: "bytes32",
+        tags: [{ kind: "decimal", value: "counterpart", reference: 2 }],
+      }),
+    ).toBe(false);
+    expect(optionsArePresets({ type: "string", tags: [] })).toBe(false);
+    expect(optionsArePresets(undefined)).toBe(false);
   });
 });
