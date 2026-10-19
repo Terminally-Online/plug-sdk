@@ -214,17 +214,17 @@ describe("PlugSession.signIn", () => {
       address: ADDRESS,
       signMessage,
       chainId: 1,
-      domain: "poof.plug.to",
-      uri: "https://poof.plug.to",
-      statement: "Access poof.",
+      domain: "plug.to",
+      uri: "https://plug.to",
+      statement: "Access Plug.",
     });
 
     expect(getNonce).toHaveBeenCalledTimes(1);
 
     const signed = signMessage.mock.calls[0][0];
-    expect(signed).toContain("poof.plug.to wants you to sign in");
+    expect(signed).toContain("plug.to wants you to sign in");
     expect(signed).toContain("Nonce: nonce-1");
-    expect(signed).toContain("Access poof.");
+    expect(signed).toContain("Access Plug.");
 
     expect(verify).toHaveBeenCalledWith({
       message: signed,
@@ -252,8 +252,8 @@ describe("PlugSession.signIn", () => {
           throw new Error("user rejected");
         },
         chainId: 1,
-        domain: "poof.plug.to",
-        uri: "https://poof.plug.to",
+        domain: "plug.to",
+        uri: "https://plug.to",
       }),
     ).rejects.toThrow("user rejected");
 
@@ -287,8 +287,8 @@ describe("PlugSession.signIn", () => {
       address: ADDRESS,
       signMessage,
       chainId: 8453,
-      domain: "poof.plug.to",
-      uri: "https://poof.plug.to",
+      domain: "plug.to",
+      uri: "https://plug.to",
     });
 
     expect(signMessage.mock.calls[0][0]).toContain("Chain ID: 8453");
@@ -305,8 +305,8 @@ describe("PlugSession.signIn", () => {
     await session.signIn({
       address: ADDRESS,
       signMessage,
-      domain: "poof.plug.to",
-      uri: "https://poof.plug.to",
+      domain: "plug.to",
+      uri: "https://plug.to",
     });
 
     expect(signMessage.mock.calls[0][0]).not.toMatch(/^Chain ID: 1$/m);

@@ -4,8 +4,8 @@ import { buildSiweMessage } from "./siwe";
 
 const BASE = {
   address: "0x1111111111111111111111111111111111111111",
-  domain: "poof.plug.to",
-  uri: "https://poof.plug.to",
+  domain: "plug.to",
+  uri: "https://plug.to",
   nonce: "abc123",
   chainId: 1,
   issuedAt: new Date("2026-08-19T12:00:00.000Z"),
@@ -15,11 +15,11 @@ describe("buildSiweMessage", () => {
   it("emits the EIP-4361 preamble without a statement", () => {
     expect(buildSiweMessage(BASE)).toBe(
       [
-        "poof.plug.to wants you to sign in with your Ethereum account:",
+        "plug.to wants you to sign in with your Ethereum account:",
         "0x1111111111111111111111111111111111111111",
         "",
         "",
-        "URI: https://poof.plug.to",
+        "URI: https://plug.to",
         "Version: 1",
         "Chain ID: 1",
         "Nonce: abc123",
@@ -29,9 +29,9 @@ describe("buildSiweMessage", () => {
   });
 
   it("surrounds a statement with blank lines", () => {
-    const message = buildSiweMessage({ ...BASE, statement: "Access poof." });
+    const message = buildSiweMessage({ ...BASE, statement: "Access Plug." });
 
-    expect(message).toContain("\n\nAccess poof.\n\nURI:");
+    expect(message).toContain("\n\nAccess Plug.\n\nURI:");
   });
 
   it("carries the chain it was asked for", () => {

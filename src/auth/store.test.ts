@@ -73,10 +73,10 @@ describe("browserSessionStore", () => {
   });
 
   it("persists sessions under the configured key", async () => {
-    const store = browserSessionStore({ key: "poof.session" });
+    const store = browserSessionStore({ key: "app.session" });
     await store.write(session());
 
-    expect(backing.has("poof.session")).toBe(true);
+    expect(backing.has("app.session")).toBe(true);
     expect(await store.read(ADDRESS)).toMatchObject({ accessToken: "access" });
   });
 
