@@ -66,7 +66,7 @@ describe("resolveBrowserBaseUrl", () => {
   });
 
   it("should pass through non-loopback baseUrls", () => {
-    stubWindow("peepaw-mbp.tailnet.ts.net");
+    stubWindow("chance-mbp.tailnet.ts.net");
     expect(resolveBrowserBaseUrl("https://api.plug.to")).toBe(
       "https://api.plug.to",
     );
@@ -80,9 +80,9 @@ describe("resolveBrowserBaseUrl", () => {
   });
 
   it("should remap loopback baseUrl to the page hostname", () => {
-    stubWindow("peepaw-mbp.tailnet.ts.net");
+    stubWindow("chance-mbp.tailnet.ts.net");
     expect(resolveBrowserBaseUrl("http://localhost:8080")).toBe(
-      "http://peepaw-mbp.tailnet.ts.net:8080",
+      "http://chance-mbp.tailnet.ts.net:8080",
     );
   });
 
@@ -94,14 +94,14 @@ describe("resolveBrowserBaseUrl", () => {
   });
 
   it("should pass through invalid URLs", () => {
-    stubWindow("peepaw-mbp.tailnet.ts.net");
+    stubWindow("chance-mbp.tailnet.ts.net");
     expect(resolveBrowserBaseUrl("not-a-url")).toBe("not-a-url");
   });
 
   it("should apply inside createConfig", () => {
-    stubWindow("peepaw-mbp.tailnet.ts.net");
+    stubWindow("chance-mbp.tailnet.ts.net");
     const config = createConfig({ baseUrl: "http://localhost:8080" });
-    expect(config.baseUrl).toBe("http://peepaw-mbp.tailnet.ts.net:8080");
+    expect(config.baseUrl).toBe("http://chance-mbp.tailnet.ts.net:8080");
   });
 });
 
