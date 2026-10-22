@@ -35,9 +35,11 @@ import {
   CancelTransactionParams,
   CancelTransactionResponse,
   CancelTransactionResponseSchema,
+  ExecutionMode,
+  SubmitManualTransactionResponseSchema,
+  SubmitScheduledTransactionResponseSchema,
   SubmitTransactionParams,
   SubmitTransactionResponse,
-  SubmitTransactionResponseSchema,
 } from "./lib/schemas/transaction";
 import { SeriesQueryParams, SeriesResponseSchema } from "./lib/schemas/series";
 import { ColorQueryParams, ColorResponseSchema } from "./lib/schemas/cdn";
@@ -561,7 +563,7 @@ export class PlugClient {
     return this.createValidator(CancelTransactionResponseSchema)(data, url);
   };
   readonly createTransaction = this.endpoint<CreateTransactionQueryParams>(
-    "/transaction",
+    "/transaction/",
     "POST",
     {
       summary:
@@ -585,18 +587,25 @@ export class PlugClient {
     );
   };
 
-  readonly submitTransaction = async ({
+  readonly submitTransaction = async <TMode extends ExecutionMode>({
     address,
     ...input
-  }: SubmitTransactionParams): Promise<SubmitTransactionResponse> => {
-    const data = await this.request<unknown>(
-      `/address/${address}/transaction/`,
-      { method: "PUT", body: JSON.stringify(input) },
-    );
-    return this.createValidator(SubmitTransactionResponseSchema)(
+  }: SubmitTransactionParams & { mode: TMode }): Promise<
+    SubmitTransactionResponse<TMode>
+  > => {
+    const path = `/address/${address}/transaction/`;
+    const data = await this.request<unknown>(path, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
+    const schema =
+      input.mode === "manual"
+        ? SubmitManualTransactionResponseSchema
+        : SubmitScheduledTransactionResponseSchema;
+    return this.createValidator(schema)(
       data,
-      `/address/${address}/transaction/`,
-    );
+      path,
+    ) as SubmitTransactionResponse<TMode>;
   };
 
   readonly getSeries = this.endpoint<SeriesQueryParams>("/history", "GET", {

@@ -49,7 +49,7 @@ import {
   CancelTransactionInputSchema,
   CancelTransactionResponseSchema,
   SubmitTransactionInputSchema,
-  SubmitTransactionResponseSchema,
+  SubmitManualTransactionResponseSchema,
 } from "../schemas/transaction";
 import {
   SeriesQueryParamsSchema,
@@ -520,12 +520,12 @@ const ENDPOINT_DEFINITIONS: EndpointDefinition[] = [
     path: "/address/{address}/transaction/",
     summary: "Submit transaction",
     description:
-      "Broadcasts a signed intent bundle.\n\nThe signature must come from the owning wallet, which makes this the one surface in the API that cannot act on an arbitrary address. Everything before it, reading, composing, compiling, is open; the moment value can move, the wallet is the gate. The submitted program carries its own conditions, so execution happens when they are met, not necessarily when this call returns.\n\nReach for it as the final step of the flow the create and compile surfaces set up: sign what they produced, hand it over, and track the record through the transactions list.",
+      "Relays or arms a signed program created on the same path.\n\nThe signature must come from the owning wallet, which makes this the one surface in the API that cannot act on an arbitrary address. Everything before it, reading, composing, compiling, is open; the moment value can move, the wallet is the gate. The program must match one the create step stored. In `manual` mode it is relayed at once, the relayer paying the gas and deploying the Plug Account if it has no code yet, and the response carries the `transaction_hash` and the `intent_id` it fired. In `scheduled` mode the stored intent is armed and returned as the same row the transactions list carries, and it fires when its conditions are met.\n\nReach for it as the final step of the flow the create and compile surfaces set up: sign what they produced, hand it over, and track the record through the transactions list.",
     tag: "transaction",
     pathParams: AddressParamsSchema,
     bodySchema: SubmitTransactionInputSchema,
     streaming: false,
-    responseSchema: SubmitTransactionResponseSchema,
+    responseSchema: SubmitManualTransactionResponseSchema,
   },
   {
     operationId: "cancelTransaction",

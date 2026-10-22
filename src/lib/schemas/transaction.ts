@@ -133,12 +133,26 @@ export const CreateTransactionQueryParamsSchema = z.object({
   input: CreateTransactionInputSchema,
 });
 
-export const RelaySwapRegionSchema = z.object({
-  token_in: z.string(),
-  token_out: z.string(),
-  amount_in: z.number(),
-  executor_slot: z.number(),
+// SolutionSend mirrors gusher's protocol.SolutionSend: one token a solution
+// region's route sends, at a literal amount or one read from a state slot.
+export const SolutionSendSchema = z.object({
+  plug: z.number(),
+  token: z.string(),
+  token_slot: z.number().optional(),
+  amount: z.number().optional(),
+  amount_slot: z.number().optional(),
+});
+
+// SolutionRegion mirrors gusher's protocol.SolutionRegion: a span of the
+// program whose route the relayer solves at execution.
+export const SolutionRegionSchema = z.object({
   route_slot: z.number(),
+  solution: z.number(),
+  predicate_start: z.number(),
+  predicate_end: z.number(),
+  sends: z.array(SolutionSendSchema),
+  buy_tokens: z.array(z.string()),
+  jump_base: z.number().optional(),
 });
 
 export const TypedDataSchema = z.object({
@@ -151,11 +165,14 @@ export const TypedDataSchema = z.object({
   message: z.record(z.string(), z.any()),
 });
 
+// RelayPayload mirrors gusher's transaction.RelayPayload: the EIP-712 payload
+// the owner signs, the program and its state as hex, and the solution regions,
+// which gusher omits when the program has none.
 export const RelayPayloadSchema = z.object({
   typed_data: TypedDataSchema,
   plugs: z.array(z.string()),
   state: z.array(z.string()),
-  manifest: z.array(RelaySwapRegionSchema),
+  solutions: z.array(SolutionRegionSchema).optional(),
 });
 
 export const CreateTransactionDataSchema = TransactionSchema.extend({
@@ -166,18 +183,29 @@ export const CreateTransactionResponseSchema = createResponseSchema(
   CreateTransactionDataSchema,
 );
 
+// SubmitTransactionInput mirrors gusher's SubmitTransactionInput: the signed
+// program and state, the owner and salt that locate the Plug Account (an absent
+// salt is the owner's primary account), and the mode. Manual relays the program
+// now; scheduled arms the stored intent for the engine to fire.
 export const SubmitTransactionInputSchema = z.object({
   chain_id: z.number(),
+  mode: ExecutionModeSchema,
   owner: z.string(),
   salt: z.string().optional(),
   plugs: z.array(z.string()),
   state: z.array(z.string()),
   signature: z.string(),
-  manifest: z.array(RelaySwapRegionSchema),
 });
-export const SubmitTransactionResponseSchema = z.object({
+
+// A manual submission answers with the relayed transaction and the intent row
+// it fired.
+export const SubmitManualTransactionResponseSchema = z.object({
   transaction_hash: z.string(),
+  intent_id: z.string(),
 });
+
+// A scheduled submission answers with the armed intent row, bare.
+export const SubmitScheduledTransactionResponseSchema = TransactionSchema;
 
 export type TransactionInput = z.infer<typeof TransactionInputSchema>;
 export type TransactionStep = z.infer<typeof TransactionStepSchema>;
@@ -370,16 +398,25 @@ export const CompileTransactionResponseSchema = createResponseSchema(
   CompileTransactionDataSchema,
 );
 
-export type RelaySwapRegion = z.infer<typeof RelaySwapRegionSchema>;
+export type SolutionSend = z.infer<typeof SolutionSendSchema>;
+export type SolutionRegion = z.infer<typeof SolutionRegionSchema>;
 export type TypedData = z.infer<typeof TypedDataSchema>;
 export type RelayPayload = z.infer<typeof RelayPayloadSchema>;
 export type SubmitTransactionInput = z.infer<
   typeof SubmitTransactionInputSchema
 >;
 export type SubmitTransactionParams = AddressParams & SubmitTransactionInput;
-export type SubmitTransactionResponse = z.infer<
-  typeof SubmitTransactionResponseSchema
+export type SubmitManualTransactionResponse = z.infer<
+  typeof SubmitManualTransactionResponseSchema
 >;
+export type SubmitScheduledTransactionResponse = z.infer<
+  typeof SubmitScheduledTransactionResponseSchema
+>;
+export type SubmitTransactionResponse<
+  TMode extends ExecutionMode = ExecutionMode,
+> = TMode extends "manual"
+  ? SubmitManualTransactionResponse
+  : SubmitScheduledTransactionResponse;
 
 export type CoilOption = z.infer<typeof CoilOptionSchema>;
 export type CompileTransactionQueryParams = z.infer<
