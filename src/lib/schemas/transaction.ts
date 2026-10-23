@@ -302,6 +302,14 @@ export const SimulationExclusionSchema = z.object({
   parameter: z.number().nullish(),
 });
 
+// One call of the wallet_sendCalls batch a signed compile returns — the exact
+// batch the simulation executed, ready to send as-is.
+export const LoweredCallSchema = z.object({
+  to: z.string(),
+  value: z.string(),
+  data: z.string(),
+});
+
 export const SimulationSchema = z.object({
   verdict: z.string().nullish(),
   reason: z.string().nullish(),
@@ -312,6 +320,12 @@ export const SimulationSchema = z.object({
   exclusions: z.array(SimulationExclusionSchema).nullish(),
   retained: z.array(z.string()).nullish(),
   notes: z.array(z.string()).nullish(),
+  batch: z
+    .array(LoweredCallSchema)
+    .nullish()
+    .describe(
+      "The lowered batch a non-executable verdict was read from: the approvals and the execute call exactly as they were simulated.",
+    ),
 });
 
 export const IRInstructionSchema = z.object({
@@ -346,14 +360,6 @@ export const IntentEdgeSchema = z.object({
 export const IntentGraphSchema = z.object({
   nodes: z.array(IntentNodeSchema),
   edges: z.array(IntentEdgeSchema),
-});
-
-// One call of the wallet_sendCalls batch a signed compile returns — the exact
-// batch the simulation executed, ready to send as-is.
-export const LoweredCallSchema = z.object({
-  to: z.string(),
-  value: z.string(),
-  data: z.string(),
 });
 
 // The signing surface of a compiled draft: the counterfactual account the

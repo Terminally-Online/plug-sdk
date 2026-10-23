@@ -21,6 +21,8 @@ export interface UseCompileOptions {
   enabled?: boolean;
   chainId?: number;
   steps?: CompileStep[];
+  /** The account the draft executes for; with it a complete draft lowers to the owner's batch and the typed data to sign. */
+  owner?: string;
 }
 
 export interface UseCompileResult {
@@ -38,7 +40,7 @@ export interface UseCompileResult {
 
 export function useCompile(options: UseCompileOptions = {}): UseCompileResult {
   const { client } = usePlugContext();
-  const { enabled = true, chainId, steps } = options;
+  const { enabled = true, chainId, steps, owner } = options;
 
   const input = useMemo<
     CompileTransactionQueryParams["input"] | undefined
@@ -54,8 +56,12 @@ export function useCompile(options: UseCompileOptions = {}): UseCompileResult {
           : {}),
       };
     });
-    return { chain_id: chainId, steps: stepsRecord };
-  }, [chainId, steps]);
+    return {
+      chain_id: chainId,
+      ...(owner ? { owner } : {}),
+      steps: stepsRecord,
+    };
+  }, [chainId, steps, owner]);
 
   const queryKey = QueryKeys.compile(input as Record<string, unknown>);
 

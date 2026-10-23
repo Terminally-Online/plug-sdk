@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import compileOwnerShort from "./fixtures/compile-owner-short.json";
 import relayCreate from "./fixtures/relay-create.json";
 import relaySubmitManual from "./fixtures/relay-submit-manual.json";
 import relaySubmitScheduled from "./fixtures/relay-submit-scheduled.json";
@@ -46,6 +47,20 @@ describe("CompileTransactionResponseSchema", () => {
     });
     expect(parsed.data?.calls).toBeUndefined();
     expect(parsed.data?.program).toBeUndefined();
+  });
+});
+
+// The fixture is gusher's CompileTransactionResponse for an owner, marshalled
+// from its Go types. A lowering that will not execute still answers with the
+// batch it simulated, on the simulation: the approvals and the value the
+// program spends.
+describe("a compile for an owner that will not execute", () => {
+  it("keeps the batch its simulation ran", () => {
+    const parsed = CompileTransactionResponseSchema.parse(compileOwnerShort);
+    expect(parsed.data?.calls).toBeUndefined();
+    expect(parsed.data?.simulation?.batch).toEqual(
+      compileOwnerShort.data.simulation.batch,
+    );
   });
 });
 
