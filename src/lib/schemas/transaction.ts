@@ -54,7 +54,7 @@ export const TransactionSchema = z
     failing_condition: z.number().optional(),
     last_simmed_block: z.number().optional(),
   })
-  .passthrough();
+  .loose();
 
 export const GetTransactionsFilterSchema = z.object({
   id: z
@@ -92,7 +92,7 @@ export const CancelTransactionResponseSchema = z
     execution_mode: z.string().optional(),
     tx_hash: z.string().nullish(),
   })
-  .passthrough();
+  .loose();
 
 export const CreateTransactionInputStepSchema = z.object({
   protocol: z

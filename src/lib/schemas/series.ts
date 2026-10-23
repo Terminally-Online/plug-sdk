@@ -50,7 +50,7 @@ export const SeriesEntrySchema = z
 		position: SeriesPositionSchema.optional(),
 		portfolio: SeriesPortfolioSchema.optional(),
 	})
-	.passthrough()
+	.loose()
 
 export const SeriesSchema = z.array(SeriesEntrySchema)
 

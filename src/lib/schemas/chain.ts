@@ -9,7 +9,7 @@ export const ChainSchema = z.object({
   name: z.string(),
   symbol: z.string(),
   decimals: z.number(),
-  icon: z.string().url(),
+  icon: z.url(),
   external: ExternalSchema,
   block_time: z.number(),
   warming: z.boolean().optional(),
