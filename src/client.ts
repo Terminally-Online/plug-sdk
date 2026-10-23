@@ -119,6 +119,25 @@ const normalizeCallPath = (
   return { pathname: resolved.pathname, search: resolved.searchParams };
 };
 
+// The API states why it refused a request in an `error` field, inside the
+// response envelope's `data` or at the top level. That sentence is the message;
+// a body that carries none is reported whole behind its status.
+const refusalMessage = (status: number, body: string): string => {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (parsed && typeof parsed === "object") {
+      const data = (parsed as { data?: unknown }).data;
+      const enveloped =
+        data && typeof data === "object"
+          ? (data as { error?: unknown }).error
+          : undefined;
+      const error = enveloped ?? (parsed as { error?: unknown }).error;
+      if (typeof error === "string" && error.trim() !== "") return error;
+    }
+  } catch {}
+  return `HTTP ${status}: ${body}`;
+};
+
 export type RawCallParams = {
   method: EndpointMethod;
   path: string;
@@ -255,9 +274,8 @@ export class PlugClient {
       }
 
       if (!response.ok) {
-        const errorData = await response.text();
         throw new PlugNetworkError(
-          `HTTP ${response.status}: ${errorData}`,
+          refusalMessage(response.status, await response.text()),
           response.status,
         );
       }

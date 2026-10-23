@@ -70,3 +70,46 @@ describe("PlugClient.submitTransaction", () => {
     expect(armed.id).toBe(relaySubmitScheduled.id);
   });
 });
+
+describe("PlugClient.compileTransaction", () => {
+  it("rejects a refused draft with gusher's own words and its status", async () => {
+    const refusal =
+      "unknown action chainlink:feed on chain 1: protocol chainlink has no action feed";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ links: { self: "/transaction/" }, data: { error: refusal } }),
+            { status: 422, headers: { "Content-Type": "application/json" } },
+          ),
+      ),
+    );
+
+    const compiling = client().compileTransaction({
+      input: { chain_id: 1, steps: { 0: { protocol: "chainlink", step: "feed" } } },
+    });
+
+    await expect(compiling).rejects.toMatchObject({ message: refusal, statusCode: 422 });
+  });
+
+  it("rejects a bare error body with its error text", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ error: "invalid request body: unexpected EOF" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }),
+      ),
+    );
+
+    const compiling = client().compileTransaction({ input: { chain_id: 1, steps: {} } });
+
+    await expect(compiling).rejects.toMatchObject({
+      message: "invalid request body: unexpected EOF",
+      statusCode: 400,
+    });
+  });
+});
