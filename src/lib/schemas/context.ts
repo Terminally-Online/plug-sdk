@@ -112,6 +112,11 @@ export const ContextStepSchema = z.object({
 	feeds: z.array(z.string()).optional(),
 	options: ContextStepOptionsSchema.optional(),
 	meta: MetaSchema.optional(),
+	// The market each market input's drafted, selected or searched value names,
+	// keyed by input index, when that value is another address than the
+	// market's own: an Aave Pool names its PoolAddressesProvider, the value the
+	// input's options carry.
+	markets: z.record(z.string(), z.string()).optional(),
 	// The chains this action runs on: those of its protocol's chains it can be
 	// offered on. A protocol lists every chain any of its actions runs on, so
 	// narrowing to one chain by the protocol's list alone keeps actions that
