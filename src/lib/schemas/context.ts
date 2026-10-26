@@ -144,6 +144,9 @@ export const ContextProtocolSchema = z.object({
 	name: z.string(),
 	symbol: z.string(),
 	icon: z.string(),
+	// The protocol's brand colour, when it registers one: the tint its marks
+	// draw with, so a screen of them needs no colour read per mark.
+	color: z.string().optional(),
 	description: z.string().optional(),
 	tags: z.array(z.string()),
 	chains: z.array(ChainSchema),
