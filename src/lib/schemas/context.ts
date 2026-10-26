@@ -108,6 +108,9 @@ export const ContextStepSchema = z.object({
 	name: z.string(),
 	description: z.string(),
 	icon: z.string(),
+	// The colour the action's mark draws with: the tint gusher reads once off
+	// the mark, so a screen of action marks needs no colour read per mark.
+	color: z.string().optional(),
 	attributes: ContextStepAttributesSchema.optional(),
 	feeds: z.array(z.string()).optional(),
 	options: ContextStepOptionsSchema.optional(),

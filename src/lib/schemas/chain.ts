@@ -10,6 +10,8 @@ export const ChainSchema = z.object({
   symbol: z.string(),
   decimals: z.number(),
   icon: z.url(),
+  // The colour the chain's mark draws with, so a mark needs no colour read.
+  color: z.string().optional(),
   external: ExternalSchema,
   block_time: z.number(),
   warming: z.boolean().optional(),

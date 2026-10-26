@@ -40,4 +40,12 @@ describe("ChainResponseSchema", () => {
     expect(ethereum?.warming).toBeUndefined();
     expect(base?.warming).toBe(true);
   });
+
+  it("keeps the colour a chain's mark is served with", () => {
+    const parsed = ChainResponseSchema.parse({
+      ...live,
+      data: [{ ...live.data[0], color: "#000000" }],
+    });
+    expect(parsed.data?.[0]?.color).toBe("#000000");
+  });
 });
