@@ -125,6 +125,9 @@ export const CreateTransactionInputSchema = z.object({
     .number()
     .optional()
     .describe("Gas limit recorded on the created transaction."),
+  mode: ExecutionModeSchema.optional().describe(
+    "How the signed program will be submitted, manual when absent. A manual run is sent once: its program runs one time, until the deadline. A scheduled intent keeps exactly the runs its steps declare.",
+  ),
   steps: z
     .record(z.number(), CreateTransactionInputStepSchema)
     .describe("The steps/actions to include in the transaction."),
@@ -165,14 +168,25 @@ export const TypedDataSchema = z.object({
   message: z.record(z.string(), z.any()),
 });
 
+// RunOnce is the guard gusher compiles ahead of a run the person sends once:
+// the nonce the run's program counts its one run under, and the time from
+// which the program refuses to run. Absent for a plug that declares how often
+// it runs, and for a scheduled intent.
+export const RunOnceSchema = z.object({
+  nonce: z.string(),
+  until: z.number(),
+});
+
 // RelayPayload mirrors gusher's transaction.RelayPayload: the EIP-712 payload
-// the owner signs, the program and its state as hex, and the solution regions,
-// which gusher omits when the program has none.
+// the owner signs, the program and its state as hex, the solution regions,
+// which gusher omits when the program has none, and the once guard of a run
+// the person sends once.
 export const RelayPayloadSchema = z.object({
   typed_data: TypedDataSchema,
   plugs: z.array(z.string()),
   state: z.array(z.string()),
   solutions: z.array(SolutionRegionSchema).optional(),
+  once: RunOnceSchema.nullish(),
 });
 
 export const CreateTransactionDataSchema = TransactionSchema.extend({
@@ -371,6 +385,7 @@ export const LoweredProgramSchema = z.object({
   salt: z.string(),
   deadline: z.number(),
   typed_data: TypedDataSchema,
+  once: RunOnceSchema.nullish(),
 });
 
 // An input the compiled draft leaves unbound for the caller to supply at
@@ -407,6 +422,7 @@ export const CompileTransactionResponseSchema = createResponseSchema(
 export type SolutionSend = z.infer<typeof SolutionSendSchema>;
 export type SolutionRegion = z.infer<typeof SolutionRegionSchema>;
 export type TypedData = z.infer<typeof TypedDataSchema>;
+export type RunOnce = z.infer<typeof RunOnceSchema>;
 export type RelayPayload = z.infer<typeof RelayPayloadSchema>;
 export type SubmitTransactionInput = z.infer<
   typeof SubmitTransactionInputSchema
