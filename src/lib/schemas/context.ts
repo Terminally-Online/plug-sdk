@@ -120,6 +120,11 @@ export const ContextStepSchema = z.object({
 	// market's own: an Aave Pool names its PoolAddressesProvider, the value the
 	// input's options carry.
 	markets: z.record(z.string(), z.string()).optional(),
+	// Why an input's options came back empty, keyed by input index, when the
+	// markets it could offer turn the action away themselves: every reserve a
+	// supply could go into frozen, paused or at its supply cap. Absent when the
+	// list has options, or its markets give no reason.
+	refusals: z.record(z.string(), z.string()).optional(),
 	// The chains this action runs on: those of its protocol's chains it can be
 	// offered on. A protocol lists every chain any of its actions runs on, so
 	// narrowing to one chain by the protocol's list alone keeps actions that
