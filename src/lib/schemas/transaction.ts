@@ -380,12 +380,25 @@ export const IntentGraphSchema = z.object({
 // program executes on, the salt that derives it, the deadline the signature
 // commits to (pass it back as `deadline` when re-compiling with the
 // signature), and the EIP-712 payload for eth_signTypedData_v4.
+// What a run pays back the builder that relays it, quoted before its owner
+// signs: nothing when Plug covers the run under its sponsorship policy, else
+// the gas its relay is expected to use at up to the fee cap a relay is
+// signed with today, drawn from the ether the account holds.
+export const RepaymentQuoteSchema = z.object({
+  covered: z.boolean(),
+  gas: z.number().nullish(),
+  price_wei: z.string().nullish(),
+  wei: z.string(),
+});
+
 export const LoweredProgramSchema = z.object({
   socket: z.string(),
   salt: z.string(),
   deadline: z.number(),
   typed_data: TypedDataSchema,
   once: RunOnceSchema.nullish(),
+  repayment: RepaymentQuoteSchema.nullish(),
+  repayment_reason: z.string().nullish(),
 });
 
 // An input the compiled draft leaves unbound for the caller to supply at
@@ -451,6 +464,7 @@ export type CompileTransactionResponse = z.infer<
 export type CompileParameter = z.infer<typeof CompileParameterSchema>;
 export type LoweredCall = z.infer<typeof LoweredCallSchema>;
 export type LoweredProgram = z.infer<typeof LoweredProgramSchema>;
+export type RepaymentQuote = z.infer<typeof RepaymentQuoteSchema>;
 export type IRInstruction = z.infer<typeof IRInstructionSchema>;
 export type IntentNode = z.infer<typeof IntentNodeSchema>;
 export type IntentEdge = z.infer<typeof IntentEdgeSchema>;
